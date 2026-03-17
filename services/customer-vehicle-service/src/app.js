@@ -45,5 +45,3 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
-
-// Note: The server will be started in a separate file (e.g., server.js) to keep the app configuration modular and testable.

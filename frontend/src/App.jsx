@@ -134,5 +134,3 @@ function App() {
 }
 
 export default App;
-
-// This file defines the main application component with routing for all pages. Each route points to a placeholder component that can be expanded with actual content and functionality later. The structure is organized to separate public, customer, and admin routes for better maintainability.
