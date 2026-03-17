@@ -20,6 +20,7 @@ jest.mock('../src/models', () => ({
     findOne: jest.fn(),
     findByPk: jest.fn(),
     create: jest.fn(),
+    findAll: jest.fn(),
   },
   Vehicle: {
     findAll: jest.fn(),
@@ -83,5 +84,26 @@ describe('Vehicle routes', () => {
       registrationNumber: 'CAB-1234'
     });
     expect(res.statusCode).toBe(401);
+  });
+});
+
+describe('Staff routes', () => {
+  it('GET /api/staff/mechanics returns 200', async () => {
+    const { Staff } = require('../src/models');
+    Staff.findAll.mockResolvedValue([
+      { id: 1, fullName: 'Mechanic One', role: 'mechanic' }
+    ]);
+    const res = await request(app).get('/api/staff/mechanics');
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+});
+
+describe('Vehicle status route', () => {
+  it('PATCH /api/vehicles/:id/status with invalid status returns 400', async () => {
+    const res = await request(app)
+      .patch('/api/vehicles/1/status')
+      .send({ status: 'invalid' });
+    expect(res.statusCode).toBe(400);
   });
 });

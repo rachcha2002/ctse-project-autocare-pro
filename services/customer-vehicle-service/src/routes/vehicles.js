@@ -22,6 +22,25 @@ router.post('/', authenticate, validate(vehicleSchema), async (req, res) => {
   }
 });
 
+// PATCH /api/vehicles/:id/status
+// Called by Appointment Service when appointment is confirmed
+// to mark vehicle as in_service
+// No auth required — internal service call
+router.patch('/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['active', 'in_service', 'inactive'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+    const vehicle = await Vehicle.findByPk(req.params.id);
+    if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
+    await vehicle.update({ status });
+    res.json({ id: vehicle.id, status: vehicle.status });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update status', details: err.message });
+  }
+});
+
 // GET /api/vehicles/customer/:customerId — MUST be before /:id
 router.get('/customer/:customerId', async (req, res) => {
   try {
