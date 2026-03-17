@@ -12,11 +12,6 @@ on:
     paths:
       - 'gateway/**'
 
-env:
-  SERVICE_NAME: gateway
-  SERVICE_PATH: gateway
-  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/autocare-gateway
-
 jobs:
   build-push:
     name: Build and Push Docker Image
@@ -36,22 +31,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKER_IMAGE }}
-          tags: |
-            type=sha,prefix=
-            type=raw,value=latest
-
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: ./gateway
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/autocare-gateway:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -77,5 +62,5 @@ jobs:
   #         # Uncomment in Phase 6 when AWS is ready
   #         # aws eks update-kubeconfig --name autocare-cluster
   #         # kubectl set image deployment/gateway \
-  #         #   gateway=${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+  #         #   gateway=${{ secrets.DOCKERHUB_USERNAME }}/autocare-gateway:${{ github.sha }}
   #         echo "Deploy step - uncomment in Phase 6 when AWS is ready"
