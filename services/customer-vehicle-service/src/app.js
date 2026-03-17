@@ -7,6 +7,7 @@ const morgan = require('morgan');
 const authRoutes = require('./routes/auth');
 const customerRoutes = require('./routes/customers');
 const vehicleRoutes = require('./routes/vehicles');
+const staffRoutes = require('./routes/staff');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/staff', staffRoutes);
 
 // 404
 app.use((req, res) => {
