@@ -8,12 +8,20 @@ AutoCare Pro is a comprehensive vehicle service center management system built u
 
 ## Architecture Overview
 
-The system consists of 4 backend microservices and 1 React frontend:
+The system consists of 4 backend microservices, 1 React frontend, and an Nginx API Gateway:
+
+All external traffic goes through the Nginx API Gateway on port 80. The frontend uses http://localhost:80 locally and the AWS API Gateway URL in production.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Frontend (React)                         │
-│                            Port: 80                              │
+│                           Port: 3080                             │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     API Gateway (Nginx)                          │
+│                           Port: 80                               │
 └─────────────────────────────────────────────────────────────────┘
                                 │
         ┌───────────────────────┼───────────────────────┐
@@ -38,11 +46,12 @@ The system consists of 4 backend microservices and 1 React frontend:
 
 | Service | Port | Owner | Description | Tech Stack |
 |---------|------|-------|-------------|------------|
+| gateway | 80 | All students | API Gateway routing all external traffic | Nginx |
 | customer-vehicle-service | 3000 | Student 1 | Customer registration, authentication, vehicle management | Node.js, Express, PostgreSQL, JWT |
 | appointment-service | 3001 | Student 2 | Service appointment scheduling and management | Node.js, Express, PostgreSQL |
 | job-service | 3002 | Student 3 | Mechanic job assignment and progress tracking | Node.js, Express, PostgreSQL |
 | payment-service | 3003 | Student 4 | Invoice generation and payment processing | Node.js, Express, PostgreSQL |
-| frontend | 80 | Student 1 | User interface for customers and admins | React, Vite, TailwindCSS |
+| frontend | 3080 | Student 1 | User interface for customers and admins | React, Vite, TailwindCSS |
 
 ## Getting Started
 
@@ -66,7 +75,8 @@ docker-compose up --build
 ```
 
 3. Access the application:
-- Frontend: http://localhost
+- API Gateway: http://localhost (port 80)
+- Frontend: http://localhost:3080
 - Customer Vehicle Service: http://localhost:3000
 - Appointment Service: http://localhost:3001
 - Job Service: http://localhost:3002
@@ -115,6 +125,9 @@ npm test
 
 ```
 autocare-pro/
+├── gateway/
+│   ├── nginx.conf
+│   └── Dockerfile
 ├── services/
 │   ├── customer-vehicle-service/
 │   ├── appointment-service/
@@ -123,6 +136,7 @@ autocare-pro/
 ├── frontend/
 ├── .github/
 │   └── workflows/
+│       ├── gateway.yml
 │       ├── customer-vehicle.yml
 │       ├── appointment.yml
 │       ├── job.yml

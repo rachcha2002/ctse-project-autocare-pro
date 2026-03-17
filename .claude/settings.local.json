@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npm test:*)",
       "Bash(docker-compose build:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(curl:*)",
+      "Bash(docker-compose:*)"
     ]
   }
 }

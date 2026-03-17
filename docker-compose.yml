@@ -1,4 +1,18 @@
 services:
+  # API Gateway
+  gateway:
+    build: ./gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - customer-vehicle-service
+      - appointment-service
+      - job-service
+      - payment-service
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
   # Customer Vehicle Service
   customer-vehicle-service:
     build:
@@ -94,14 +108,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "3080:80"
     environment:
-      - VITE_API_GATEWAY_URL=http://localhost:3000
+      - VITE_API_GATEWAY_URL=http://localhost:80
     depends_on:
-      - customer-vehicle-service
-      - appointment-service
-      - job-service
-      - payment-service
+      - gateway
     networks:
       - autocare-network
     restart: unless-stopped
