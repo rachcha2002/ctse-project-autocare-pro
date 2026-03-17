@@ -1,47 +1,43 @@
-const express = require("express");
-const helmet = require("helmet");
-const cors = require("cors");
-const morgan = require("morgan");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+
+const authRoutes = require('./routes/auth');
+const customerRoutes = require('./routes/customers');
+const vehicleRoutes = require('./routes/vehicles');
 
 const app = express();
 
-// Security middleware
 app.use(helmet());
-
-// CORS configuration
 app.use(cors());
-
-// Logging middleware
-app.use(morgan("combined"));
-
-// Body parser middleware
+app.use(morgan('combined'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    service: "customer-vehicle-service",
-    timestamp: new Date(),
+// Health check
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'customer-vehicle-service',
+    timestamp: new Date()
   });
 });
 
-// 404 handler
-app.use((req, res, next) => {
-  res.status(404).json({
-    error: "Not Found",
-    message: `Cannot ${req.method} ${req.path}`,
-  });
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+
+// 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error("Error:", err.message);
-  res.status(err.status || 500).json({
-    error: err.message || "Internal Server Error",
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-  });
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 module.exports = app;
