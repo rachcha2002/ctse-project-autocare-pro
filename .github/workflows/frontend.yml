@@ -2,13 +2,11 @@ name: Frontend CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, develop, 'feature/**']
     paths:
       - 'frontend/**'
   pull_request:
-    branches:
-      - main
+    branches: [main, develop]
     paths:
       - 'frontend/**'
 
@@ -58,7 +56,7 @@ jobs:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
