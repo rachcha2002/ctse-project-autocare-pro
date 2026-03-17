@@ -15,4 +15,25 @@ const authenticate = (req, res, next) => {
   }
 };
 
-module.exports = { authenticate };
+const adminOnly = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+const staffOnly = (req, res, next) => {
+  if (!req.user || !['admin', 'mechanic'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Staff access required' });
+  }
+  next();
+};
+
+const customerOnly = (req, res, next) => {
+  if (!req.user || req.user.role !== 'customer') {
+    return res.status(403).json({ error: 'Customer access required' });
+  }
+  next();
+};
+
+module.exports = { authenticate, adminOnly, staffOnly, customerOnly };

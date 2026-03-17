@@ -16,6 +16,11 @@ jest.mock('../src/models', () => ({
     create: jest.fn(),
     increment: jest.fn(),
   },
+  Staff: {
+    findOne: jest.fn(),
+    findByPk: jest.fn(),
+    create: jest.fn(),
+  },
   Vehicle: {
     findAll: jest.fn(),
     findByPk: jest.fn(),
@@ -58,6 +63,15 @@ describe('Auth routes', () => {
       email: 'not-an-email',
       password: 'password123'
     });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('Staff auth routes', () => {
+  it('POST /api/auth/staff/login with empty body returns 400', async () => {
+    const res = await request(app)
+      .post('/api/auth/staff/login')
+      .send({});
     expect(res.statusCode).toBe(400);
   });
 });

@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
-const { Customer } = require('../models');
+const { Customer, Staff } = require('../models');
 const { authenticate } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { registerSchema, loginSchema } = require('../utils/validationSchemas');
@@ -82,6 +82,38 @@ router.post('/login', validate(loginSchema), async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed', details: err.message });
+  }
+});
+
+// POST /api/auth/staff/login
+router.post('/staff/login', validate(loginSchema), async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const staff = await Staff.findOne({ where: { email } });
+    if (!staff) return res.status(404).json({ error: 'Staff account not found' });
+
+    const valid = await bcrypt.compare(password, staff.passwordHash);
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const token = jwt.sign(
+      { staffId: staff.id, email, role: staff.role, type: 'staff' },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      staff: {
+        id: staff.id,
+        fullName: staff.fullName,
+        email,
+        role: staff.role
+      }
+    });
+  } catch (err) {
+    console.error('Staff login error:', err);
     res.status(500).json({ error: 'Login failed', details: err.message });
   }
 });
