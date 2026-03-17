@@ -1,0 +1,76 @@
+openapi: 3.0.0
+info:
+  title: Job Service API
+  version: 1.0.0
+  description: |
+    AutoCare Pro - Job Management Service.
+    Handles mechanic job assignments and progress tracking.
+
+servers:
+  - url: http://localhost:3002
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: job-service
+        timestamp:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the service
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  # TODO: Add job endpoints
+  # POST /jobs - Create new job from appointment
+  # GET /jobs - List all jobs
+  # GET /jobs/{id} - Get job by ID
+  # GET /jobs/mechanic/{mechanicId} - Get jobs by mechanic
+  # GET /jobs/appointment/{appointmentId} - Get job by appointment
+  # PUT /jobs/{id} - Update job details
+  # PATCH /jobs/{id}/status - Update job status
+  # PATCH /jobs/{id}/progress - Update job progress
+
+  # TODO: Add mechanic endpoints
+  # GET /mechanics - List all mechanics
+  # GET /mechanics/{id} - Get mechanic by ID
+  # GET /mechanics/{id}/availability - Get mechanic availability
+  # POST /mechanics/{id}/assign - Assign job to mechanic
+
+  # TODO: Add job task endpoints
+  # POST /jobs/{id}/tasks - Add task to job
+  # PUT /jobs/{id}/tasks/{taskId} - Update task
+  # PATCH /jobs/{id}/tasks/{taskId}/complete - Mark task complete

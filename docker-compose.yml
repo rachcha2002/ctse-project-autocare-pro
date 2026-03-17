@@ -1,0 +1,169 @@
+services:
+  # Customer Vehicle Service
+  customer-vehicle-service:
+    build:
+      context: ./services/customer-vehicle-service
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_HOST=cv-db
+      - DB_PORT=5432
+      - DB_NAME=cv_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - JWT_SECRET=your-jwt-secret-here
+      - APPOINTMENT_SERVICE_URL=http://appointment-service:3001
+    depends_on:
+      - cv-db
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Appointment Service
+  appointment-service:
+    build:
+      context: ./services/appointment-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DB_HOST=appt-db
+      - DB_PORT=5432
+      - DB_NAME=appt_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - CUSTOMER_VEHICLE_SERVICE_URL=http://customer-vehicle-service:3000
+      - JOB_SERVICE_URL=http://job-service:3002
+    depends_on:
+      - appt-db
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Job Service
+  job-service:
+    build:
+      context: ./services/job-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - DB_HOST=job-db
+      - DB_PORT=5432
+      - DB_NAME=job_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - CUSTOMER_VEHICLE_SERVICE_URL=http://customer-vehicle-service:3000
+      - APPOINTMENT_SERVICE_URL=http://appointment-service:3001
+      - PAYMENT_SERVICE_URL=http://payment-service:3003
+    depends_on:
+      - job-db
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - DB_HOST=pay-db
+      - DB_PORT=5432
+      - DB_NAME=pay_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - CUSTOMER_VEHICLE_SERVICE_URL=http://customer-vehicle-service:3000
+      - JOB_SERVICE_URL=http://job-service:3002
+    depends_on:
+      - pay-db
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_GATEWAY_URL=http://localhost:3000
+    depends_on:
+      - customer-vehicle-service
+      - appointment-service
+      - job-service
+      - payment-service
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Customer Vehicle Database
+  cv-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=cv_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - cv-db-data:/var/lib/postgresql/data
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Appointment Database
+  appt-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=appt_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - appt-db-data:/var/lib/postgresql/data
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Job Database
+  job-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=job_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - job-db-data:/var/lib/postgresql/data
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Payment Database
+  pay-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=pay_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pay-db-data:/var/lib/postgresql/data
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+networks:
+  autocare-network:
+    driver: bridge
+
+volumes:
+  cv-db-data:
+  appt-db-data:
+  job-db-data:
+  pay-db-data:

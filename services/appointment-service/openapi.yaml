@@ -1,0 +1,73 @@
+openapi: 3.0.0
+info:
+  title: Appointment Service API
+  version: 1.0.0
+  description: |
+    AutoCare Pro - Appointment Booking Service.
+    Handles service appointment scheduling and management.
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: appointment-service
+        timestamp:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the service
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  # TODO: Add appointment endpoints
+  # POST /appointments - Create new appointment
+  # GET /appointments - List all appointments
+  # GET /appointments/{id} - Get appointment by ID
+  # GET /appointments/customer/{customerId} - Get appointments by customer
+  # GET /appointments/vehicle/{vehicleId} - Get appointments by vehicle
+  # PUT /appointments/{id} - Update appointment
+  # PATCH /appointments/{id}/status - Update appointment status
+  # DELETE /appointments/{id} - Cancel appointment
+
+  # TODO: Add service type endpoints
+  # GET /service-types - List available service types
+  # GET /service-types/{id} - Get service type details
+
+  # TODO: Add availability endpoints
+  # GET /availability - Get available time slots
+  # GET /availability/{date} - Get availability for specific date
