@@ -3,8 +3,9 @@ const { Op } = require('sequelize');
 const { Appointment } = require('../models');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { createAppointmentSchema } = require('../utils/validationSchemas');
+const { createAppointmentSchema, updateStatusSchema } = require('../utils/validationSchemas');
 const cvClient = require('../services/cvClient');
+const jobClient = require('../services/jobClient');
 
 const router = express.Router();
 
@@ -123,6 +124,91 @@ router.get('/:id', async (req, res) => {
     res.json(appointment);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch appointment', details: err.message });
+  }
+});
+
+// PATCH /api/appointments/:id/confirm — Admin only
+// Confirms appointment, sets vehicle to in_service, creates job
+router.patch('/:id/confirm', authenticate, adminOnly, async (req, res) => {
+  try {
+    const appointment = await Appointment.findByPk(req.params.id);
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+
+    if (appointment.status !== 'pending') {
+      return res.status(409).json({
+        error: `Cannot confirm appointment with status: ${appointment.status}`
+      });
+    }
+
+    // Call 1 — Update vehicle status to in_service in CV Service
+    try {
+      await cvClient.updateVehicleStatus(appointment.vehicleId, 'in_service');
+    } catch (err) {
+      console.error('Failed to update vehicle status:', err.message);
+    }
+
+    // Update appointment status to confirmed
+    await appointment.update({ status: 'confirmed' });
+
+    // Call 2 — Auto-create job in Job Service
+    let job = null;
+    try {
+      job = await jobClient.createJob({
+        appointmentId: appointment.id,
+        vehicleId: appointment.vehicleId,
+        customerId: appointment.customerId,
+        serviceType: appointment.serviceType
+      });
+    } catch (err) {
+      console.error('Failed to create job — job service may be unavailable:', err.message);
+    }
+
+    res.json({ appointment, job });
+  } catch (err) {
+    console.error('Confirm appointment error:', err);
+    res.status(500).json({ error: 'Failed to confirm appointment', details: err.message });
+  }
+});
+
+// PATCH /api/appointments/:id/status — called by Job Service
+// No auth required — internal service call
+router.patch('/:id/status', validate(updateStatusSchema), async (req, res) => {
+  try {
+    const appointment = await Appointment.findByPk(req.params.id);
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+
+    await appointment.update({ status: req.body.status });
+    res.json(appointment);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update status', details: err.message });
+  }
+});
+
+// DELETE /api/appointments/:id — cancel appointment
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    const appointment = await Appointment.findByPk(req.params.id);
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+
+    if (['completed', 'in_progress'].includes(appointment.status)) {
+      return res.status(409).json({
+        error: 'Cannot cancel an appointment that is in progress or completed'
+      });
+    }
+
+    // Reset vehicle status back to active if appointment was confirmed
+    if (appointment.status === 'confirmed') {
+      try {
+        await cvClient.updateVehicleStatus(appointment.vehicleId, 'active');
+      } catch (err) {
+        console.error('Failed to reset vehicle status:', err.message);
+      }
+    }
+
+    await appointment.update({ status: 'cancelled' });
+    res.json({ message: 'Appointment cancelled successfully', appointment });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to cancel appointment', details: err.message });
   }
 });
 
