@@ -45,3 +45,5 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
+
+// To start the server, create a separate file (e.g., server.js) with the following content:
