@@ -34,6 +34,7 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "setupFiles": ["dotenv/config"],
     "coverageDirectory": "coverage",
     "collectCoverageFrom": [
       "src/**/*.js",
