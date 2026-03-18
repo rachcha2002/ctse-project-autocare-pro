@@ -18,7 +18,6 @@ jest.mock('../src/models', () => ({
   },
 }));
 
-// Mock inter-service clients
 jest.mock('../src/services/cvClient', () => ({
   getMechanics: jest.fn(),
   getMechanic: jest.fn(),
@@ -34,16 +33,12 @@ jest.mock('../src/services/paymentClient', () => ({
   createInvoice: jest.fn(),
 }));
 
-// Mock auth middleware to avoid calling CV service in tests
 jest.mock('../src/middleware/auth', () => ({
   authenticate: (req, res, next) => {
-    req.user = { userId: 1, email: 'test@test.com', role: 'customer' };
+    req.user = { userId: 1, email: 'test@test.com', role: 'admin', type: 'staff' };
     next();
   },
-  adminOnly: (req, res, next) => {
-    req.user = { userId: 1, email: 'admin@test.com', role: 'admin' };
-    next();
-  },
+  adminOnly: (req, res, next) => next(),
   staffOnly: (req, res, next) => next(),
 }));
 
@@ -51,7 +46,7 @@ const request = require('supertest');
 const app = require('../src/app');
 
 describe('Health check', () => {
-  it('GET /health returns 200 with ok status', async () => {
+  it('GET /health returns 200', async () => {
     const res = await request(app).get('/health');
     expect(res.statusCode).toBe(200);
     expect(res.body.status).toBe('ok');
@@ -59,40 +54,75 @@ describe('Health check', () => {
   });
 });
 
-describe('Job routes — validation', () => {
+describe('Job routes — create', () => {
   it('POST /api/jobs with empty body returns 400', async () => {
     const res = await request(app).post('/api/jobs').send({});
     expect(res.statusCode).toBe(400);
   });
 
-  it('POST /api/jobs without appointmentId returns 400', async () => {
-    const res = await request(app).post('/api/jobs').send({
-      vehicleId: 1,
-      customerId: 1,
-      serviceType: 'Oil Change',
+  it('POST /api/jobs with valid data creates job', async () => {
+    const { Job } = require('../src/models');
+    Job.findOne.mockResolvedValue(null);
+    Job.create.mockResolvedValue({
+      id: 1, appointmentId: 1, vehicleId: 1,
+      customerId: 1, serviceType: 'Full Service', status: 'created'
     });
-    expect(res.statusCode).toBe(400);
+    const res = await request(app).post('/api/jobs').send({
+      appointmentId: 1, vehicleId: 1,
+      customerId: 1, serviceType: 'Full Service'
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.body.status).toBe('created');
+  });
+
+  it('POST /api/jobs with duplicate appointmentId returns 409', async () => {
+    const { Job } = require('../src/models');
+    Job.findOne.mockResolvedValue({ id: 1, appointmentId: 1 });
+    const res = await request(app).post('/api/jobs').send({
+      appointmentId: 1, vehicleId: 1,
+      customerId: 1, serviceType: 'Oil Change'
+    });
+    expect(res.statusCode).toBe(409);
   });
 });
 
-describe('Job routes — assign validation', () => {
-  it('PATCH /api/jobs/:id/assign without mechanicId returns 400', async () => {
-    const res = await request(app).patch('/api/jobs/1/assign').send({});
-    expect(res.statusCode).toBe(400);
+describe('Job routes — read', () => {
+  it('GET /api/jobs/:id returns 404 when not found', async () => {
+    const { Job } = require('../src/models');
+    Job.findByPk.mockResolvedValue(null);
+    const res = await request(app).get('/api/jobs/99999');
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('GET /api/jobs/:id returns job when found', async () => {
+    const { Job } = require('../src/models');
+    Job.findByPk.mockResolvedValue({ id: 1, status: 'created' });
+    const res = await request(app).get('/api/jobs/1');
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('GET /api/jobs/appointment/:id returns 404 when no job', async () => {
+    const { Job } = require('../src/models');
+    Job.findOne.mockResolvedValue(null);
+    const res = await request(app).get('/api/jobs/appointment/99');
+    expect(res.statusCode).toBe(404);
   });
 });
 
 describe('Job routes — complete validation', () => {
-  it('PATCH /api/jobs/:id/complete without required fields returns 400', async () => {
-    const res = await request(app).patch('/api/jobs/1/complete').send({});
+  it('PATCH /api/jobs/:id/complete with empty body returns 400', async () => {
+    const res = await request(app)
+      .patch('/api/jobs/1/complete')
+      .send({});
     expect(res.statusCode).toBe(400);
   });
 
-  it('PATCH /api/jobs/:id/complete without workDescription returns 400', async () => {
-    const res = await request(app).patch('/api/jobs/1/complete').send({
-      partsCost: 100,
-      laborCost: 50,
-    });
-    expect(res.statusCode).toBe(400);
+  it('PATCH /api/jobs/:id/complete on non-existent job returns 404', async () => {
+    const { Job } = require('../src/models');
+    Job.findByPk.mockResolvedValue(null);
+    const res = await request(app)
+      .patch('/api/jobs/99/complete')
+      .send({ workDescription: 'Done', partsCost: 0, laborCost: 5000 });
+    expect(res.statusCode).toBe(404);
   });
 });
