@@ -2,9 +2,10 @@ const express = require('express');
 const { Job } = require('../models');
 const { authenticate, adminOnly, staffOnly } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { createJobSchema, assignJobSchema } = require('../utils/validationSchemas');
+const { createJobSchema, assignJobSchema, progressSchema, completeJobSchema } = require('../utils/validationSchemas');
 const cvClient = require('../services/cvClient');
 const appointmentClient = require('../services/appointmentClient');
+const paymentClient = require('../services/paymentClient');
 
 const router = express.Router();
 
@@ -155,6 +156,123 @@ router.patch('/:id/start', authenticate, staffOnly, async (req, res) => {
   } catch (err) {
     console.error('Start job error:', err);
     res.status(500).json({ error: 'Failed to start job', details: err.message });
+  }
+});
+
+// PUT /api/jobs/:id/progress — Mechanic or Admin
+// Update notes, parts, costs during work
+router.put('/:id/progress', authenticate, staffOnly, validate(progressSchema), async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    if (job.status === 'completed') {
+      return res.status(409).json({ error: 'Cannot update completed job' });
+    }
+
+    const updates = {};
+    if (req.body.workDescription !== undefined) updates.workDescription = req.body.workDescription;
+    if (req.body.sparePartsUsed !== undefined) updates.sparePartsUsed = req.body.sparePartsUsed;
+    if (req.body.partsCost !== undefined) updates.partsCost = req.body.partsCost;
+    if (req.body.laborCost !== undefined) updates.laborCost = req.body.laborCost;
+    if (req.body.status !== undefined) updates.status = req.body.status;
+
+    await job.update(updates);
+    res.json(job);
+  } catch (err) {
+    console.error('Update progress error:', err);
+    res.status(500).json({ error: 'Failed to update job progress', details: err.message });
+  }
+});
+
+// PATCH /api/jobs/:id/complete — Mechanic or Admin
+// MOST IMPORTANT ROUTE — triggers 3 downstream inter-service calls:
+// 1. Appointment Service — update status to completed
+// 2. Customer & Vehicle Service — update vehicle service history
+// 3. Payment Service — create invoice
+router.patch('/:id/complete', authenticate, staffOnly, validate(completeJobSchema), async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    if (job.status === 'completed') {
+      return res.status(409).json({ error: 'Job is already completed' });
+    }
+
+    if (!['in_progress', 'waiting_parts'].includes(job.status)) {
+      return res.status(409).json({
+        error: `Cannot complete job with status: ${job.status}. Job must be in_progress or waiting_parts.`
+      });
+    }
+
+    // Save final job details
+    await job.update({
+      status: 'completed',
+      workDescription: req.body.workDescription,
+      sparePartsUsed: req.body.sparePartsUsed || '',
+      partsCost: req.body.partsCost,
+      laborCost: req.body.laborCost,
+      completedAt: new Date()
+    });
+
+    const results = {
+      job,
+      appointmentUpdated: false,
+      vehicleHistoryUpdated: false,
+      invoiceCreated: false,
+      errors: []
+    };
+
+    // === DOWNSTREAM CALL 1 ===
+    // Update Appointment Service status to completed
+    try {
+      await appointmentClient.updateAppointmentStatus(job.appointmentId, 'completed');
+      results.appointmentUpdated = true;
+      console.log(`Job ${job.id}: Appointment ${job.appointmentId} marked completed`);
+    } catch (err) {
+      results.errors.push(`Appointment update failed: ${err.message}`);
+      console.error('Failed to update appointment:', err.message);
+    }
+
+    // === DOWNSTREAM CALL 2 ===
+    // Update vehicle service history in Customer & Vehicle Service
+    try {
+      await cvClient.updateVehicleService(job.vehicleId, {
+        jobId: job.id,
+        serviceDate: new Date().toISOString().split('T')[0],
+        serviceType: job.serviceType,
+        summary: req.body.workDescription,
+        amountPaid: parseFloat(req.body.laborCost) + parseFloat(req.body.partsCost)
+      });
+      results.vehicleHistoryUpdated = true;
+      console.log(`Job ${job.id}: Vehicle ${job.vehicleId} service history updated`);
+    } catch (err) {
+      results.errors.push(`Vehicle history update failed: ${err.message}`);
+      console.error('Failed to update vehicle history:', err.message);
+    }
+
+    // === DOWNSTREAM CALL 3 ===
+    // Trigger invoice creation in Payment Service
+    try {
+      const invoice = await paymentClient.createInvoice({
+        jobId: job.id,
+        customerId: job.customerId,
+        laborCost: parseFloat(req.body.laborCost),
+        partsCost: parseFloat(req.body.partsCost),
+        serviceType: job.serviceType
+      });
+      results.invoiceCreated = true;
+      results.invoice = invoice;
+      console.log(`Job ${job.id}: Invoice created - ID ${invoice.id}`);
+    } catch (err) {
+      results.errors.push(`Invoice creation failed: ${err.message}`);
+      console.error('Failed to create invoice:', err.message);
+    }
+
+    res.json(results);
+  } catch (err) {
+    console.error('Complete job error:', err);
+    res.status(500).json({ error: 'Failed to complete job', details: err.message });
   }
 });
 
