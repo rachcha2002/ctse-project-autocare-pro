@@ -45,6 +45,7 @@ jobs:
         run: npm test
 
       - name: SonarCloud Scan
+        if: github.ref == 'refs/heads/main'
         uses: SonarSource/sonarqube-scan-action@v6
         with:
           projectBaseDir: ${{ env.SERVICE_PATH }}
