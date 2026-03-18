@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const { Payment } = require('../models');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { createInvoiceSchema } = require('../utils/validationSchemas');
+const { createInvoiceSchema, processPaymentSchema } = require('../utils/validationSchemas');
 const { generateInvoiceNumber } = require('../utils/invoiceGenerator');
 const jobClient = require('../services/jobClient');
 const cvClient = require('../services/cvClient');
@@ -108,6 +108,113 @@ router.get('/:id', authenticate, async (req, res) => {
     res.json(payment);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch payment', details: err.message });
+  }
+});
+
+// POST /api/payments/:id/pay — process payment
+// Calls Customer & Vehicle Service to update customer spending
+router.post('/:id/pay', authenticate, validate(processPaymentSchema), async (req, res) => {
+  try {
+    const payment = await Payment.findByPk(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+
+    if (payment.status === 'paid') {
+      return res.status(409).json({ error: 'This invoice has already been paid' });
+    }
+
+    if (payment.status === 'cancelled') {
+      return res.status(409).json({ error: 'Cannot process payment for cancelled invoice' });
+    }
+
+    // Update payment record
+    await payment.update({
+      status: 'paid',
+      paymentMethod: req.body.paymentMethod,
+      paidAt: new Date()
+    });
+
+    // Call Customer & Vehicle Service to update customer spending
+    try {
+      await cvClient.updateCustomerSpending(
+        payment.customerId,
+        parseFloat(payment.totalAmount)
+      );
+      console.log(`Payment ${payment.id}: Customer ${payment.customerId} spending updated by ${payment.totalAmount}`);
+    } catch (err) {
+      console.error('Failed to update customer spending:', err.message);
+      // Do not fail the payment — spending update is best-effort
+    }
+
+    res.json({
+      success: true,
+      payment,
+      receiptUrl: `/api/payments/${payment.id}/receipt`
+    });
+  } catch (err) {
+    console.error('Process payment error:', err);
+    res.status(500).json({ error: 'Failed to process payment', details: err.message });
+  }
+});
+
+// GET /api/payments/:id/receipt — formatted receipt summary
+router.get('/:id/receipt', authenticate, async (req, res) => {
+  try {
+    const payment = await Payment.findByPk(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+
+    if (payment.status !== 'paid') {
+      return res.status(400).json({
+        error: 'Receipt only available for paid invoices',
+        currentStatus: payment.status
+      });
+    }
+
+    // Format receipt
+    const receipt = {
+      receiptTitle: 'AutoCare Pro — Service Receipt',
+      invoiceNumber: payment.invoiceNumber,
+      date: payment.paidAt,
+      customer: {
+        name: payment.customerName,
+        phone: payment.customerPhone
+      },
+      vehicle: {
+        registrationNumber: payment.vehicleRegistration
+      },
+      service: {
+        type: payment.serviceType,
+        laborCost: parseFloat(payment.laborCost),
+        partsCost: parseFloat(payment.partsCost),
+        totalAmount: parseFloat(payment.totalAmount)
+      },
+      payment: {
+        method: payment.paymentMethod,
+        status: payment.status,
+        paidAt: payment.paidAt
+      },
+      footer: 'Thank you for choosing AutoCare Pro. Drive safe!'
+    };
+
+    res.json(receipt);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate receipt', details: err.message });
+  }
+});
+
+// PATCH /api/payments/:id/cancel — cancel invoice (admin only)
+router.patch('/:id/cancel', authenticate, adminOnly, async (req, res) => {
+  try {
+    const payment = await Payment.findByPk(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+
+    if (payment.status === 'paid') {
+      return res.status(409).json({ error: 'Cannot cancel a paid invoice' });
+    }
+
+    await payment.update({ status: 'cancelled' });
+    res.json({ message: 'Invoice cancelled successfully', payment });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to cancel invoice', details: err.message });
   }
 });
 
