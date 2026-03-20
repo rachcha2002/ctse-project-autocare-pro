@@ -51,6 +51,18 @@ router.post('/', authenticate, validate(createAppointmentSchema), async (req, re
   }
 });
 
+// GET /api/appointments — admin: list all appointments
+router.get('/', authenticate, adminOnly, async (req, res) => {
+  try {
+    const appointments = await Appointment.findAll({
+      order: [['appointmentDate', 'DESC']]
+    });
+    res.json(appointments);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch appointments', details: err.message });
+  }
+});
+
 // GET /api/appointments/available — get available slots for a date
 router.get('/available', async (req, res) => {
   try {

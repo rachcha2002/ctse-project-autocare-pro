@@ -10,6 +10,18 @@ const cvClient = require('../services/cvClient');
 
 const router = express.Router();
 
+// GET /api/payments — admin: list all payments/invoices
+router.get('/', authenticate, adminOnly, async (req, res) => {
+  try {
+    const payments = await Payment.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(payments);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch payments', details: err.message });
+  }
+});
+
 // POST /api/payments/invoice — called by Job Service (no auth — internal)
 // Fetches job details and customer info, then creates invoice
 router.post('/invoice', validate(createInvoiceSchema), async (req, res) => {

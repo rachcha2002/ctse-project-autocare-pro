@@ -6,6 +6,19 @@ const { updateCustomerSchema, updateSpendingSchema } = require('../utils/validat
 
 const router = express.Router();
 
+// GET /api/customers — admin: list all customers
+router.get('/', async (req, res) => {
+  try {
+    const customers = await Customer.findAll({
+      attributes: { exclude: ['passwordHash'] },
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(customers);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch customers', details: err.message });
+  }
+});
+
 // GET /api/customers/:id — called by Appointment Service and Payment Service
 router.get('/:id', async (req, res) => {
   try {
