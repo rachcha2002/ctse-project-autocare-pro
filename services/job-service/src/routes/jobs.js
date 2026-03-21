@@ -100,7 +100,7 @@ router.patch('/:id/assign', authenticate, adminOnly, validate(assignJobSchema), 
     // Call CV Service to verify mechanic exists
     let mechanic;
     try {
-      mechanic = await cvClient.getMechanic(req.body.mechanicId);
+      mechanic = await cvClient.getMechanic(encodeURIComponent(req.body.mechanicId));
       if (mechanic.role !== 'mechanic') {
         return res.status(400).json({ error: 'Specified staff member is not a mechanic' });
       }
