@@ -10,22 +10,22 @@ $JOB_URL = "https://job.$Suffix"
 $PAY_URL = "https://payment.$Suffix"
 
 Write-Host "[1/6] Updating Customer & Vehicle Service..." -ForegroundColor Cyan
-az containerapp update --name customer-vehicle --resource-group autocare-pro-rg --image rachcha2002/autocare-customer-vehicle:latest --set-env-vars APPOINTMENT_SERVICE_URL="$APPT_URL" | Out-Null
+az containerapp update --name customer-vehicle --resource-group autocare-pro-rg --image rachcha/autocare-customer-vehicle:latest --set-env-vars APPOINTMENT_SERVICE_URL="$APPT_URL" | Out-Null
 
 Write-Host "[2/6] Updating Appointment Service..." -ForegroundColor Cyan
-az containerapp update --name appointment --resource-group autocare-pro-rg --image rachcha2002/autocare-appointment:latest --set-env-vars CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" JOB_SERVICE_URL="$JOB_URL" | Out-Null
+az containerapp update --name appointment --resource-group autocare-pro-rg --image rachcha/autocare-appointment:latest --set-env-vars CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" JOB_SERVICE_URL="$JOB_URL" | Out-Null
 
 Write-Host "[3/6] Updating Job Service..." -ForegroundColor Cyan
-az containerapp update --name job --resource-group autocare-pro-rg --image rachcha2002/autocare-job:latest --set-env-vars CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" APPOINTMENT_SERVICE_URL="$APPT_URL" PAYMENT_SERVICE_URL="$PAY_URL" | Out-Null
+az containerapp update --name job --resource-group autocare-pro-rg --image rachcha/autocare-job:latest --set-env-vars CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" APPOINTMENT_SERVICE_URL="$APPT_URL" PAYMENT_SERVICE_URL="$PAY_URL" | Out-Null
 
 Write-Host "[4/6] Updating Payment Service..." -ForegroundColor Cyan
-az containerapp update --name payment --resource-group autocare-pro-rg --image rachcha2002/autocare-payment:latest --set-env-vars CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" JOB_SERVICE_URL="$JOB_URL" | Out-Null
+az containerapp update --name payment --resource-group autocare-pro-rg --image rachcha/autocare-payment:latest --set-env-vars CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" JOB_SERVICE_URL="$JOB_URL" | Out-Null
 
 Write-Host "[5/6] Updating API Gateway..." -ForegroundColor Cyan
-az containerapp update --name gateway --resource-group autocare-pro-rg --image rachcha2002/autocare-gateway:latest --set-env-vars PORT=80 CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" APPOINTMENT_SERVICE_URL="$APPT_URL" JOB_SERVICE_URL="$JOB_URL" PAYMENT_SERVICE_URL="$PAY_URL" FRONTEND_URL="https://frontend.$Suffix" | Out-Null
+az containerapp update --name gateway --resource-group autocare-pro-rg --image rachcha/autocare-gateway:latest --set-env-vars PORT=80 CUSTOMER_VEHICLE_SERVICE_URL="$CV_URL" APPOINTMENT_SERVICE_URL="$APPT_URL" JOB_SERVICE_URL="$JOB_URL" PAYMENT_SERVICE_URL="$PAY_URL" FRONTEND_URL="https://frontend.$Suffix" | Out-Null
 
 Write-Host "[6/6] Updating Frontend..." -ForegroundColor Cyan
-az containerapp update --name frontend --resource-group autocare-pro-rg --image rachcha2002/autocare-frontend:latest --set-env-vars VITE_API_GATEWAY_URL="https://gateway.$Suffix" | Out-Null
+az containerapp update --name frontend --resource-group autocare-pro-rg --image rachcha/autocare-frontend:latest --set-env-vars VITE_API_GATEWAY_URL="https://gateway.$Suffix" | Out-Null
 
 Write-Host "`nAll 6 services have been successfully updated and cross-linked!" -ForegroundColor Green
 Write-Host "Frontend is live at: https://frontend.$Suffix" -ForegroundColor Yellow
