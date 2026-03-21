@@ -1,9 +1,15 @@
 services:
   # API Gateway
-  gateway:
-    build: ./gateway
+  api-gateway:
+    build:
+      context: ./gateway
     ports:
       - "80:80"
+    environment:
+      - CUSTOMER_VEHICLE_SERVICE_URL=http://customer-vehicle-service:3000
+      - APPOINTMENT_SERVICE_URL=http://appointment-service:3001
+      - JOB_SERVICE_URL=http://job-service:3002
+      - PAYMENT_SERVICE_URL=http://payment-service:3003
     depends_on:
       - customer-vehicle-service
       - appointment-service
