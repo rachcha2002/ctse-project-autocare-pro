@@ -1,7 +1,7 @@
 services:
   # API Gateway
   gateway:
-    build: ./gateway
+    image: ${DOCKERHUB_USERNAME}/autocare-gateway:latest
     ports:
       - "80:80"
     depends_on:
@@ -15,9 +15,7 @@ services:
 
   # Customer Vehicle Service
   customer-vehicle-service:
-    build:
-      context: ./services/customer-vehicle-service
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/autocare-customer-vehicle:latest
     ports:
       - "3000:3000"
     env_file:
@@ -28,9 +26,7 @@ services:
 
   # Appointment Service
   appointment-service:
-    build:
-      context: ./services/appointment-service
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/autocare-appointment:latest
     ports:
       - "3001:3001"
     env_file:
@@ -41,9 +37,7 @@ services:
 
   # Job Service
   job-service:
-    build:
-      context: ./services/job-service
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/autocare-job:latest
     ports:
       - "3002:3002"
     env_file:
@@ -54,9 +48,7 @@ services:
 
   # Payment Service
   payment-service:
-    build:
-      context: ./services/payment-service
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/autocare-payment:latest
     ports:
       - "3003:3003"
     env_file:
@@ -67,9 +59,7 @@ services:
 
   # Frontend
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/autocare-frontend:latest
     ports:
       - "3080:80"
     environment:

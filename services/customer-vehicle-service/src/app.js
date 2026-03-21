@@ -3,6 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('js-yaml');
+const fs = require('fs');
+const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const customerRoutes = require('./routes/customers');
@@ -11,10 +15,23 @@ const staffRoutes = require('./routes/staff');
 
 const app = express();
 
-app.use(helmet());
+// Relax helmet CSP so Swagger UI assets load correctly
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json());
+
+// Swagger UI — served at /api-docs
+try {
+  const swaggerDocument = YAML.load(
+    fs.readFileSync(path.join(__dirname, '..', 'openapi.yaml'), 'utf8')
+  );
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    customSiteTitle: 'Customer & Vehicle Service API'
+  }));
+} catch (e) {
+  console.warn('Could not load openapi.yaml for Swagger UI:', e.message);
+}
 
 // Health check
 app.get('/health', (req, res) => {

@@ -1,14 +1,246 @@
-openapi: 3.0.0
+openapi: "3.0.3"
 info:
   title: Appointment Service API
-  version: 1.0.0
-  description: |
-    AutoCare Pro - Appointment Booking Service.
-    Handles service appointment scheduling and management.
-
+  description: Manages the full lifecycle of service appointments at AutoCare Pro, including booking, slot availability, status management, and automatic job creation upon confirmation.
+  version: "1.0.0"
 servers:
+  - url: https://api.autocarepro.example.com
+    description: Production (AWS API Gateway)
   - url: http://localhost:3001
-    description: Local development server
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Appointments
+    description: Appointment booking and management
+  - name: Health
+    description: Service health check
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/appointments:
+    post:
+      tags: [Appointments]
+      summary: Book a new appointment
+      description: |
+        Validates customer and vehicle existence via Customer & Vehicle Service before creating.
+        Checks vehicle is not already in_service status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAppointmentRequest"
+      responses:
+        "201":
+          description: Appointment booked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+    get:
+      tags: [Appointments]
+      summary: List all appointments (admin only)
+      responses:
+        "200":
+          description: All appointments ordered by date descending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/appointments/available:
+    get:
+      tags: [Appointments]
+      summary: Get available time slots for a given date
+      security: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-05-15"
+      responses:
+        "200":
+          description: Available appointment slots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  availableSlots:
+                    type: array
+                    items:
+                      type: string
+                      format: date-time
+                    example:
+                      - "2026-05-15T08:00:00.000Z"
+                      - "2026-05-15T09:00:00.000Z"
+                  bookedCount:
+                    type: integer
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/appointments/customer/{customerId}:
+    get:
+      tags: [Appointments]
+      summary: Get all appointments for a specific customer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer's appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+
+  /api/appointments/vehicle/{vehicleId}:
+    get:
+      tags: [Appointments]
+      summary: Get all appointments for a specific vehicle
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vehicle's appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+
+  /api/appointments/{id}:
+    get:
+      tags: [Appointments]
+      summary: Get appointment by ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      tags: [Appointments]
+      summary: Cancel an appointment
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Appointment cancelled
+        "400":
+          description: Cannot cancel a confirmed or completed appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/appointments/{id}/confirm:
+    patch:
+      tags: [Appointments]
+      summary: Confirm appointment and auto-create service job (admin only)
+      description: |
+        Confirms a pending appointment. This triggers an automatic call to the Job Service
+        (POST /api/jobs) to create a new service job. Also updates vehicle status to in_service.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Appointment confirmed and job created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  appointment:
+                    $ref: "#/components/schemas/Appointment"
+                  job:
+                    type: object
+                    description: The newly created job from Job Service
+        "400":
+          description: Appointment is not in pending status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/appointments/{id}/status:
+    patch:
+      tags: [Appointments]
+      summary: Update appointment status (called by Job Service)
+      security: []
+      description: Used internally by the Job Service to synchronise appointment status when job starts or completes.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, confirmed, checked_in, in_progress, completed, cancelled]
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
 components:
   securitySchemes:
@@ -17,57 +249,94 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnauthorizedError:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ConflictError:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
   schemas:
     HealthResponse:
       type: object
       properties:
-        status:
-          type: string
-          example: ok
-        service:
-          type: string
-          example: appointment-service
-        timestamp:
-          type: string
-          format: date-time
+        status:    { type: string, example: ok }
+        service:   { type: string, example: appointment-service }
+        timestamp: { type: string, format: date-time }
 
-    Error:
+    ErrorResponse:
       type: object
       properties:
-        error:
+        error:   { type: string }
+        details: { type: string }
+
+    CreateAppointmentRequest:
+      type: object
+      required: [customerId, vehicleId, appointmentDate, serviceType]
+      properties:
+        customerId:      { type: integer, example: 1 }
+        vehicleId:       { type: integer, example: 1 }
+        appointmentDate:
           type: string
-        message:
+          format: date-time
+          example: "2026-05-15T10:00:00.000Z"
+          description: Must be a future date
+        serviceType:
           type: string
+          enum:
+            - Oil Change
+            - Brake Service
+            - Tire Rotation
+            - Engine Tune-Up
+            - Battery Replacement
+            - AC Service
+            - Transmission Service
+            - Full Inspection
+            - Full Service
+            - Body Work
+            - Other
+        notes:
+          type: string
+          example: Engine makes a knocking sound at idle
 
-paths:
-  /health:
-    get:
-      summary: Health check endpoint
-      description: Returns the health status of the service
-      tags:
-        - Health
-      responses:
-        '200':
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
-
-  # TODO: Add appointment endpoints
-  # POST /appointments - Create new appointment
-  # GET /appointments - List all appointments
-  # GET /appointments/{id} - Get appointment by ID
-  # GET /appointments/customer/{customerId} - Get appointments by customer
-  # GET /appointments/vehicle/{vehicleId} - Get appointments by vehicle
-  # PUT /appointments/{id} - Update appointment
-  # PATCH /appointments/{id}/status - Update appointment status
-  # DELETE /appointments/{id} - Cancel appointment
-
-  # TODO: Add service type endpoints
-  # GET /service-types - List available service types
-  # GET /service-types/{id} - Get service type details
-
-  # TODO: Add availability endpoints
-  # GET /availability - Get available time slots
-  # GET /availability/{date} - Get availability for specific date
+    Appointment:
+      type: object
+      properties:
+        id:              { type: integer }
+        customerId:      { type: integer }
+        vehicleId:       { type: integer }
+        appointmentDate: { type: string, format: date-time }
+        serviceType:     { type: string }
+        notes:           { type: string, nullable: true }
+        status:
+          type: string
+          enum: [pending, confirmed, checked_in, in_progress, completed, cancelled]
+        createdAt:       { type: string, format: date-time }
+        updatedAt:       { type: string, format: date-time }

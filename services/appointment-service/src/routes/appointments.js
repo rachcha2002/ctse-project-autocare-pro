@@ -147,7 +147,7 @@ router.patch('/:id/confirm', authenticate, adminOnly, async (req, res) => {
     if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
     if (appointment.status !== 'pending') {
-      return res.status(409).json({
+      return res.status(400).json({
         error: `Cannot confirm appointment with status: ${appointment.status}`
       });
     }
@@ -203,7 +203,7 @@ router.delete('/:id', authenticate, async (req, res) => {
     if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
     if (['completed', 'in_progress'].includes(appointment.status)) {
-      return res.status(409).json({
+      return res.status(400).json({
         error: 'Cannot cancel an appointment that is in progress or completed'
       });
     }

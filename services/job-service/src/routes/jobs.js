@@ -151,6 +151,10 @@ router.patch('/:id/start', authenticate, staffOnly, async (req, res) => {
       });
     }
 
+    if (!job.assignedMechanic) {
+      return res.status(400).json({ error: 'Cannot start job without an assigned mechanic' });
+    }
+
     await job.update({ status: 'in_progress' });
 
     // Call Appointment Service to update status

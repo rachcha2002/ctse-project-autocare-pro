@@ -1,14 +1,249 @@
-openapi: 3.0.0
+openapi: "3.0.3"
 info:
-  title: Job Service API
-  version: 1.0.0
+  title: Job / Service Progress Service API
   description: |
-    AutoCare Pro - Job Management Service.
-    Handles mechanic job assignments and progress tracking.
-
+    Manages service jobs at AutoCare Pro. Jobs are created automatically when an appointment is confirmed.
+    Upon job completion, this service makes three downstream calls: update Appointment status,
+    update Vehicle service history, and create a Payment invoice.
+  version: "1.0.0"
 servers:
+  - url: https://api.autocarepro.example.com
+    description: Production (AWS API Gateway)
   - url: http://localhost:3002
-    description: Local development server
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Jobs
+    description: Job lifecycle management
+  - name: Health
+    description: Service health check
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/jobs/mechanics/list:
+    get:
+      tags: [Jobs]
+      summary: Get list of available mechanics (proxies to Customer & Vehicle Service)
+      description: Used by the frontend admin panel to populate mechanic assignment dropdowns.
+      responses:
+        "200":
+          description: List of mechanics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "502":
+          description: Could not reach Customer & Vehicle Service
+
+  /api/jobs:
+    post:
+      tags: [Jobs]
+      summary: Create a new service job (called by Appointment Service on confirmation)
+      security: []
+      description: |
+        Internal endpoint called by the Appointment Service when an appointment is confirmed.
+        Checks for duplicate job for the same appointment and returns 409 if already exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "201":
+          description: Job created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /api/jobs/appointment/{appointmentId}:
+    get:
+      tags: [Jobs]
+      summary: Get job linked to a specific appointment
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/jobs/vehicle/{vehicleId}:
+    get:
+      tags: [Jobs]
+      summary: Get all jobs for a specific vehicle
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of jobs for the vehicle
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+
+  /api/jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Get job by ID
+      description: Also used by Payment Service when generating invoice to fetch cost details.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/jobs/{id}/assign:
+    patch:
+      tags: [Jobs]
+      summary: Assign a mechanic to the job (admin/mechanic only)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mechanicId]
+              properties:
+                mechanicId:
+                  type: integer
+                  example: 2
+      responses:
+        "200":
+          description: Mechanic assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/jobs/{id}/start:
+    patch:
+      tags: [Jobs]
+      summary: Start the job (mechanic must be assigned)
+      description: Sets status to in_progress and calls Appointment Service to sync status.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Job started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "400":
+          description: Cannot start — no mechanic assigned or wrong status
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/jobs/{id}/progress:
+    put:
+      tags: [Jobs]
+      summary: Update job progress (work notes, parts, interim costs)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProgressRequest"
+      responses:
+        "200":
+          description: Progress updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/jobs/{id}/complete:
+    patch:
+      tags: [Jobs]
+      summary: Complete the job and trigger invoice generation
+      description: |
+        **Key integration point.** On completion, makes three downstream calls:
+        1. `PATCH /api/appointments/:id/status` → sets appointment to completed
+        2. `PATCH /api/vehicles/:id/service-update` → adds service history entry
+        3. `POST /api/payments/invoice` → creates invoice (Payment Service)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteJobRequest"
+      responses:
+        "200":
+          description: Job completed and invoice created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job:
+                    $ref: "#/components/schemas/Job"
+                  invoice:
+                    type: object
+                    description: Created invoice from Payment Service
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
 components:
   securitySchemes:
@@ -17,60 +252,109 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnauthorizedError:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ConflictError:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
   schemas:
     HealthResponse:
       type: object
       properties:
-        status:
-          type: string
-          example: ok
-        service:
-          type: string
-          example: job-service
-        timestamp:
-          type: string
-          format: date-time
+        status:    { type: string, example: ok }
+        service:   { type: string, example: job-service }
+        timestamp: { type: string, format: date-time }
 
-    Error:
+    ErrorResponse:
       type: object
       properties:
-        error:
+        error:   { type: string }
+        details: { type: string }
+
+    StaffMember:
+      type: object
+      properties:
+        id:       { type: integer }
+        fullName: { type: string }
+        email:    { type: string }
+        role:     { type: string, enum: [admin, mechanic] }
+
+    CreateJobRequest:
+      type: object
+      required: [appointmentId, vehicleId, customerId, serviceType]
+      properties:
+        appointmentId:    { type: integer, example: 1 }
+        vehicleId:        { type: integer, example: 1 }
+        customerId:       { type: integer, example: 1 }
+        serviceType:      { type: string, example: Full Service }
+        issueDescription: { type: string, example: Engine oil needs changing }
+
+    UpdateProgressRequest:
+      type: object
+      properties:
+        workDescription: { type: string, example: Replaced engine oil and oil filter }
+        sparePartsUsed:  { type: string, example: "Oil Filter, Engine Oil 5W-30" }
+        partsCost:       { type: number, example: 1200.00 }
+        laborCost:       { type: number, example: 2500.00 }
+        status:
           type: string
-        message:
+          enum: [in_progress, waiting_parts]
+
+    CompleteJobRequest:
+      type: object
+      required: [workDescription, partsCost, laborCost]
+      properties:
+        workDescription: { type: string, example: Full engine service completed. Replaced all filters. }
+        sparePartsUsed:  { type: string, example: "Oil Filter, Air Filter, Engine Oil" }
+        partsCost:       { type: number, example: 1500.00 }
+        laborCost:       { type: number, example: 2500.00 }
+
+    Job:
+      type: object
+      properties:
+        id:               { type: integer }
+        appointmentId:    { type: integer }
+        vehicleId:        { type: integer }
+        customerId:       { type: integer }
+        assignedMechanic: { type: integer, nullable: true }
+        serviceType:      { type: string }
+        issueDescription: { type: string, nullable: true }
+        workDescription:  { type: string, nullable: true }
+        sparePartsUsed:   { type: string, nullable: true }
+        partsCost:        { type: number }
+        laborCost:        { type: number }
+        status:
           type: string
-
-paths:
-  /health:
-    get:
-      summary: Health check endpoint
-      description: Returns the health status of the service
-      tags:
-        - Health
-      responses:
-        '200':
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
-
-  # TODO: Add job endpoints
-  # POST /jobs - Create new job from appointment
-  # GET /jobs - List all jobs
-  # GET /jobs/{id} - Get job by ID
-  # GET /jobs/mechanic/{mechanicId} - Get jobs by mechanic
-  # GET /jobs/appointment/{appointmentId} - Get job by appointment
-  # PUT /jobs/{id} - Update job details
-  # PATCH /jobs/{id}/status - Update job status
-  # PATCH /jobs/{id}/progress - Update job progress
-
-  # TODO: Add mechanic endpoints
-  # GET /mechanics - List all mechanics
-  # GET /mechanics/{id} - Get mechanic by ID
-  # GET /mechanics/{id}/availability - Get mechanic availability
-  # POST /mechanics/{id}/assign - Assign job to mechanic
-
-  # TODO: Add job task endpoints
-  # POST /jobs/{id}/tasks - Add task to job
-  # PUT /jobs/{id}/tasks/{taskId} - Update task
-  # PATCH /jobs/{id}/tasks/{taskId}/complete - Mark task complete
+          enum: [created, pending, in_progress, waiting_parts, completed]
+        createdAt:        { type: string, format: date-time }
+        updatedAt:        { type: string, format: date-time }
+        completedAt:      { type: string, format: date-time, nullable: true }

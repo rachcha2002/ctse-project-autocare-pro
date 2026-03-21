@@ -13,6 +13,7 @@ RUN npm ci --only=production
 
 # Copy source code
 COPY src/ ./src/
+COPY openapi.yaml ./
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
