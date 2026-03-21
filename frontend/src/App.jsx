@@ -1,132 +1,74 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
 
-// Placeholder components for all pages
-const Home = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Home Page</h1>
-    <p>Welcome to AutoCare Pro</p>
-  </div>
-);
-const Login = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Login Page</h1>
-  </div>
-);
-const Register = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Register Page</h1>
-  </div>
-);
-const Dashboard = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Dashboard Page</h1>
-  </div>
-);
-const Vehicles = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Vehicles List Page</h1>
-  </div>
-);
-const VehicleRegister = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Vehicle Registration Page</h1>
-  </div>
-);
-const VehicleDetails = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Vehicle Details Page</h1>
-  </div>
-);
-const NewAppointment = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">New Appointment Page</h1>
-  </div>
-);
-const Appointments = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Appointments List Page</h1>
-  </div>
-);
-const AppointmentDetails = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Appointment Details Page</h1>
-  </div>
-);
-const Payments = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Payments List Page</h1>
-  </div>
-);
-const PaymentDetails = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Payment Details Page</h1>
-  </div>
-);
-const Admin = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Admin Dashboard Page</h1>
-  </div>
-);
-const AdminAppointments = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Admin Appointments Page</h1>
-  </div>
-);
-const AdminJobs = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Admin Jobs List Page</h1>
-  </div>
-);
-const AdminJobDetails = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Admin Job Details Page</h1>
-  </div>
-);
-const AdminCustomers = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Admin Customers Page</h1>
-  </div>
-);
-const AdminPayments = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Admin Payments Page</h1>
-  </div>
-);
+// Public pages
+import Home from './pages/Home';
+import Login from './pages/Login';
+import StaffLogin from './pages/StaffLogin';
+import Register from './pages/Register';
+
+// Customer pages
+import Dashboard from './pages/Dashboard';
+import Vehicles from './pages/Vehicles';
+import VehicleRegister from './pages/VehicleRegister';
+import VehicleDetails from './pages/VehicleDetails';
+import NewAppointment from './pages/NewAppointment';
+import Appointments from './pages/Appointments';
+import AppointmentDetails from './pages/AppointmentDetails';
+import Payments from './pages/Payments';
+import PaymentDetails from './pages/PaymentDetails';
+
+// Admin pages
+import Admin from './pages/Admin';
+import AdminAppointments from './pages/AdminAppointments';
+import AdminJobs from './pages/AdminJobs';
+import AdminJobDetails from './pages/AdminJobDetails';
+import AdminCustomers from './pages/AdminCustomers';
+import AdminPayments from './pages/AdminPayments';
+
 const NotFound = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">404 - Page Not Found</h1>
+  <div className="min-h-screen bg-[#0d0d0f] flex items-center justify-center">
+    <div className="text-center">
+      <p className="text-8xl font-black text-orange-500 mb-4">404</p>
+      <h1 className="text-2xl font-bold text-white mb-2">Page Not Found</h1>
+      <p className="text-gray-500 mb-6">The page you're looking for doesn't exist.</p>
+      <a href="/" className="btn-primary inline-flex">Go Home</a>
+    </div>
   </div>
 );
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#0d0d0f]">
+      <Navbar />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/staff-login" element={<StaffLogin />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Customer Routes */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/vehicles" element={<Vehicles />} />
-        <Route path="/vehicles/register" element={<VehicleRegister />} />
-        <Route path="/vehicles/:id" element={<VehicleDetails />} />
-        <Route path="/appointments/new" element={<NewAppointment />} />
-        <Route path="/appointments" element={<Appointments />} />
-        <Route path="/appointments/:id" element={<AppointmentDetails />} />
-        <Route path="/payments" element={<Payments />} />
-        <Route path="/payments/:id" element={<PaymentDetails />} />
+        {/* Customer Routes — requires auth */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
+        <Route path="/vehicles/register" element={<ProtectedRoute><VehicleRegister /></ProtectedRoute>} />
+        <Route path="/vehicles/:id" element={<ProtectedRoute><VehicleDetails /></ProtectedRoute>} />
+        <Route path="/appointments/new" element={<ProtectedRoute><NewAppointment /></ProtectedRoute>} />
+        <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+        <Route path="/appointments/:id" element={<ProtectedRoute><AppointmentDetails /></ProtectedRoute>} />
+        <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+        <Route path="/payments/:id" element={<ProtectedRoute><PaymentDetails /></ProtectedRoute>} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/appointments" element={<AdminAppointments />} />
-        <Route path="/admin/jobs" element={<AdminJobs />} />
-        <Route path="/admin/jobs/:id" element={<AdminJobDetails />} />
-        <Route path="/admin/customers" element={<AdminCustomers />} />
-        <Route path="/admin/payments" element={<AdminPayments />} />
+        {/* Admin Routes — requires auth + staff role */}
+        <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+        <Route path="/admin/appointments" element={<ProtectedRoute adminOnly><AdminAppointments /></ProtectedRoute>} />
+        <Route path="/admin/jobs" element={<ProtectedRoute adminOnly><AdminJobs /></ProtectedRoute>} />
+        <Route path="/admin/jobs/:id" element={<ProtectedRoute adminOnly><AdminJobDetails /></ProtectedRoute>} />
+        <Route path="/admin/customers" element={<ProtectedRoute adminOnly><AdminCustomers /></ProtectedRoute>} />
+        <Route path="/admin/payments" element={<ProtectedRoute adminOnly><AdminPayments /></ProtectedRoute>} />
 
-        {/* 404 Route */}
+        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

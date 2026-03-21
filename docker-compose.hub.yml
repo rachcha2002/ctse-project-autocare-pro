@@ -1,0 +1,75 @@
+services:
+  # API Gateway
+  gateway:
+    image: ${DOCKERHUB_USERNAME}/autocare-gateway:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - customer-vehicle-service
+      - appointment-service
+      - job-service
+      - payment-service
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Customer Vehicle Service
+  customer-vehicle-service:
+    image: ${DOCKERHUB_USERNAME}/autocare-customer-vehicle:latest
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./services/customer-vehicle-service/.env
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Appointment Service
+  appointment-service:
+    image: ${DOCKERHUB_USERNAME}/autocare-appointment:latest
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./services/appointment-service/.env
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Job Service
+  job-service:
+    image: ${DOCKERHUB_USERNAME}/autocare-job:latest
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./services/job-service/.env
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Payment Service
+  payment-service:
+    image: ${DOCKERHUB_USERNAME}/autocare-payment:latest
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./services/payment-service/.env
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/autocare-frontend:latest
+    ports:
+      - "3080:80"
+    environment:
+      - VITE_API_GATEWAY_URL=http://localhost:80
+    depends_on:
+      - gateway
+    networks:
+      - autocare-network
+    restart: unless-stopped
+
+networks:
+  autocare-network:
+    driver: bridge

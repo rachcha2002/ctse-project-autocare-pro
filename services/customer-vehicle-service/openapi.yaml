@@ -1,14 +1,405 @@
-openapi: 3.0.0
+openapi: "3.0.3"
 info:
-  title: Customer Vehicle Service API
-  version: 1.0.0
-  description: |
-    AutoCare Pro - Customer and Vehicle Management Service.
-    Handles customer registration, authentication, and vehicle management.
-
+  title: Customer & Vehicle Service API
+  description: Manages customer profiles, vehicle records, staff authentication, and JWT token issuance/validation for AutoCare Pro.
+  version: "1.0.0"
 servers:
+  - url: https://api.autocarepro.example.com
+    description: Production (AWS API Gateway)
   - url: http://localhost:3000
-    description: Local development server
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Auth
+    description: Customer and staff authentication
+  - name: Customers
+    description: Customer profile management
+  - name: Vehicles
+    description: Vehicle registration and service history
+  - name: Staff
+    description: Staff management (internal use)
+  - name: Health
+    description: Service health check
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new customer
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRegisterRequest"
+      responses:
+        "201":
+          description: Customer registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Customer login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/auth/staff/login:
+    post:
+      tags: [Auth]
+      summary: Staff login (admin / mechanic)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Staff login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAuthResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/auth/validate:
+    get:
+      tags: [Auth]
+      summary: Validate JWT token (called by other services)
+      description: Used internally by Appointment, Job, and Payment services to validate Bearer tokens.
+      responses:
+        "200":
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/customers:
+    get:
+      tags: [Customers]
+      summary: List all customers (admin only)
+      responses:
+        "200":
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /api/customers/{id}:
+    get:
+      tags: [Customers]
+      summary: Get customer by ID (called by Appointment and Payment services)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    put:
+      tags: [Customers]
+      summary: Update customer profile
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdateRequest"
+      responses:
+        "200":
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/customers/{id}/spending:
+    patch:
+      tags: [Customers]
+      summary: Update customer total spending (called by Payment Service)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+                  example: 3500.00
+      responses:
+        "200":
+          description: Spending updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  totalSpent: { type: number }
+                  totalServices: { type: integer }
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/vehicles:
+    post:
+      tags: [Vehicles]
+      summary: Register a new vehicle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleCreateRequest"
+      responses:
+        "201":
+          description: Vehicle registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+
+  /api/vehicles/customer/{customerId}:
+    get:
+      tags: [Vehicles]
+      summary: Get all vehicles for a customer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+
+  /api/vehicles/{id}:
+    get:
+      tags: [Vehicles]
+      summary: Get vehicle by ID
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Vehicle details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    put:
+      tags: [Vehicles]
+      summary: Update vehicle details
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleUpdateRequest"
+      responses:
+        "200":
+          description: Vehicle updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /api/vehicles/{id}/status:
+    patch:
+      tags: [Vehicles]
+      summary: Update vehicle status (called by Appointment Service)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [active, in_service, inactive]
+      responses:
+        "200":
+          description: Status updated
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/vehicles/{id}/service-update:
+    patch:
+      tags: [Vehicles]
+      summary: Update vehicle service record and history (called by Job Service on completion)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobId, serviceDate, serviceType, summary]
+              properties:
+                jobId:    { type: integer }
+                serviceDate: { type: string, format: date }
+                serviceType: { type: string }
+                summary:    { type: string }
+                amountPaid: { type: number }
+      responses:
+        "200":
+          description: Service history updated
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/vehicles/{id}/history:
+    get:
+      tags: [Vehicles]
+      summary: Get full service history for a vehicle
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Service history records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServiceHistoryEntry"
+
+  /api/staff/mechanics:
+    get:
+      tags: [Staff]
+      summary: List all mechanics (called by Job Service for assignment)
+      security: []
+      responses:
+        "200":
+          description: List of mechanics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+
+  /api/staff/{id}:
+    get:
+      tags: [Staff]
+      summary: Get staff member by ID
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Staff member details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /api/staff:
+    get:
+      tags: [Staff]
+      summary: List all staff (admin only)
+      responses:
+        "200":
+          description: All staff members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
 components:
   securitySchemes:
@@ -17,59 +408,169 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Resource ID
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnauthorizedError:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ConflictError:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
   schemas:
     HealthResponse:
       type: object
       properties:
-        status:
-          type: string
-          example: ok
-        service:
-          type: string
-          example: customer-vehicle-service
-        timestamp:
-          type: string
-          format: date-time
+        status:   { type: string, example: ok }
+        service:  { type: string, example: customer-vehicle-service }
+        timestamp: { type: string, format: date-time }
 
-    Error:
+    ErrorResponse:
       type: object
       properties:
-        error:
-          type: string
-        message:
-          type: string
+        error:   { type: string }
+        details: { type: string }
 
-paths:
-  /health:
-    get:
-      summary: Health check endpoint
-      description: Returns the health status of the service
-      tags:
-        - Health
-      responses:
-        '200':
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email, example: customer@example.com }
+        password: { type: string, minLength: 8, example: "Password123!" }
 
-  # TODO: Add customer endpoints
-  # POST /customers - Register new customer
-  # GET /customers - List all customers
-  # GET /customers/{id} - Get customer by ID
-  # PUT /customers/{id} - Update customer
-  # DELETE /customers/{id} - Delete customer
+    CustomerRegisterRequest:
+      type: object
+      required: [fullName, phone, email, password]
+      properties:
+        fullName: { type: string, example: Nimal Perera }
+        phone:    { type: string, example: "0712345678" }
+        email:    { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        address:  { type: string }
+        nic:      { type: string, example: "200012345678" }
 
-  # TODO: Add authentication endpoints
-  # POST /auth/login - Customer login
-  # POST /auth/register - Customer registration
-  # POST /auth/refresh - Refresh token
+    CustomerUpdateRequest:
+      type: object
+      properties:
+        fullName: { type: string }
+        phone:    { type: string }
+        address:  { type: string }
 
-  # TODO: Add vehicle endpoints
-  # POST /vehicles - Register new vehicle
-  # GET /vehicles - List all vehicles
-  # GET /vehicles/{id} - Get vehicle by ID
-  # GET /vehicles/customer/{customerId} - Get vehicles by customer
-  # PUT /vehicles/{id} - Update vehicle
-  # DELETE /vehicles/{id} - Delete vehicle
+    AuthResponse:
+      type: object
+      properties:
+        token:    { type: string, description: JWT Bearer token }
+        customer: { $ref: "#/components/schemas/Customer" }
+
+    StaffAuthResponse:
+      type: object
+      properties:
+        token: { type: string }
+        staff: { $ref: "#/components/schemas/StaffMember" }
+
+    ValidateResponse:
+      type: object
+      properties:
+        valid: { type: boolean, example: true }
+        user:
+          type: object
+          properties:
+            id:    { type: integer }
+            email: { type: string }
+            role:  { type: string, enum: [customer, admin, mechanic] }
+
+    Customer:
+      type: object
+      properties:
+        id:             { type: integer }
+        fullName:       { type: string }
+        phone:          { type: string }
+        email:          { type: string }
+        address:        { type: string }
+        nic:            { type: string }
+        totalServices:  { type: integer }
+        totalSpent:     { type: number }
+        createdAt:      { type: string, format: date-time }
+
+    VehicleCreateRequest:
+      type: object
+      required: [customerId, registrationNumber, make, model, year]
+      properties:
+        customerId:          { type: integer }
+        registrationNumber:  { type: string, example: CAB-1234 }
+        make:                { type: string, example: Toyota }
+        model:               { type: string, example: Prius }
+        year:                { type: integer, example: 2020 }
+        colour:              { type: string, example: White }
+        fuelType:            { type: string, enum: [petrol, diesel, electric, hybrid, lpg] }
+        mileage:             { type: integer, example: 45000 }
+
+    VehicleUpdateRequest:
+      type: object
+      properties:
+        colour:  { type: string }
+        fuelType: { type: string }
+        mileage: { type: integer }
+
+    Vehicle:
+      type: object
+      properties:
+        id:                  { type: integer }
+        customerId:          { type: integer }
+        registrationNumber:  { type: string }
+        make:                { type: string }
+        model:               { type: string }
+        year:                { type: integer }
+        colour:              { type: string }
+        fuelType:            { type: string }
+        mileage:             { type: integer }
+        status:              { type: string, enum: [active, in_service, inactive] }
+        lastServiceDate:     { type: string, format: date, nullable: true }
+        createdAt:           { type: string, format: date-time }
+
+    ServiceHistoryEntry:
+      type: object
+      properties:
+        id:          { type: integer }
+        vehicleId:   { type: integer }
+        jobId:       { type: integer }
+        paymentId:   { type: integer, nullable: true }
+        serviceDate: { type: string, format: date }
+        serviceType: { type: string }
+        summary:     { type: string }
+        amountPaid:  { type: number }
+
+    StaffMember:
+      type: object
+      properties:
+        id:       { type: integer }
+        fullName: { type: string }
+        phone:    { type: string }
+        email:    { type: string }
+        role:     { type: string, enum: [admin, mechanic] }
