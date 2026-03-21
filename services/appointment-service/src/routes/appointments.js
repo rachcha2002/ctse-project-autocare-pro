@@ -17,7 +17,7 @@ router.post('/', authenticate, validate(createAppointmentSchema), async (req, re
     // Call 1 — Verify customer exists in CV Service
     let customer;
     try {
-      customer = await cvClient.getCustomer(customerId);
+      customer = await cvClient.getCustomer(encodeURIComponent(customerId));
     } catch (err) {
       return res.status(404).json({ error: 'Customer not found in system' });
     }
@@ -25,7 +25,7 @@ router.post('/', authenticate, validate(createAppointmentSchema), async (req, re
     // Call 2 — Verify vehicle exists and is not in_service
     let vehicle;
     try {
-      vehicle = await cvClient.getVehicle(vehicleId);
+      vehicle = await cvClient.getVehicle(encodeURIComponent(vehicleId));
     } catch (err) {
       return res.status(404).json({ error: 'Vehicle not found in system' });
     }

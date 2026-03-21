@@ -40,7 +40,7 @@ router.post('/invoice', validate(createInvoiceSchema), async (req, res) => {
     // Call 1 — Get job details from Job Service
     let job;
     try {
-      job = await jobClient.getJob(jobId);
+      job = await jobClient.getJob(encodeURIComponent(jobId));
     } catch (err) {
       return res.status(404).json({ error: 'Job not found in Job Service' });
     }
@@ -48,7 +48,7 @@ router.post('/invoice', validate(createInvoiceSchema), async (req, res) => {
     // Call 2 — Get customer details from Customer & Vehicle Service
     let customer;
     try {
-      customer = await cvClient.getCustomer(customerId);
+      customer = await cvClient.getCustomer(encodeURIComponent(customerId));
     } catch (err) {
       return res.status(404).json({ error: 'Customer not found in CV Service' });
     }
