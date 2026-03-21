@@ -10,6 +10,18 @@ const cvClient = require('../services/cvClient');
 
 const router = express.Router();
 
+// GET /api/payments — admin: list all payments/invoices
+router.get('/', authenticate, adminOnly, async (req, res) => {
+  try {
+    const payments = await Payment.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(payments);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch payments', details: err.message });
+  }
+});
+
 // POST /api/payments/invoice — called by Job Service (no auth — internal)
 // Fetches job details and customer info, then creates invoice
 router.post('/invoice', validate(createInvoiceSchema), async (req, res) => {
@@ -119,7 +131,7 @@ router.post('/:id/pay', authenticate, validate(processPaymentSchema), async (req
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
 
     if (payment.status === 'paid') {
-      return res.status(409).json({ error: 'This invoice has already been paid' });
+      return res.status(400).json({ error: 'This invoice has already been paid' });
     }
 
     if (payment.status === 'cancelled') {
@@ -208,7 +220,7 @@ router.patch('/:id/cancel', authenticate, adminOnly, async (req, res) => {
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
 
     if (payment.status === 'paid') {
-      return res.status(409).json({ error: 'Cannot cancel a paid invoice' });
+      return res.status(400).json({ error: 'Cannot cancel a paid invoice' });
     }
 
     await payment.update({ status: 'cancelled' });

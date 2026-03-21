@@ -1,0 +1,97 @@
+﻿
+> appointment-service@1.0.0 test
+> jest --coverage
+
+node.exe : PASS tests/health.test.js
+At line:1 char:1
++ & "C:\nvm4w\nodejs/node.exe" "C:\nvm4w\nodejs/node_modules/npm/bin/np ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS tests/health.test.js:String) [], RemoteExceptio 
+   n
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:07 +0000] "GET /health HTTP/1.1" 200 86 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:07 +0000] "GET /api/appointments/1 HTTP/1.1" 200 128 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:07 +0000] "GET /api/appointments/9999 HTTP/1.1" 404 33 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "GET /api/appointments/customer/1 HTTP/1.1" 200 146 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "PATCH /api/appointments/9999/confirm HTTP/1.1" 404 33 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "PATCH /api/appointments/1/confirm HTTP/1.1" 409 61 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "POST /api/appointments HTTP/1.1" 400 162 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "POST /api/appointments HTTP/1.1" 400 92 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "PATCH /api/appointments/1/confirm HTTP/1.1" 200 134 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "POST /api/appointments HTTP/1.1" 400 203 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "DELETE /api/appointments/9999 HTTP/1.1" 404 33 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "PATCH /api/appointments/1/status HTTP/1.1" 400 137 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "DELETE /api/appointments/1 HTTP/1.1" 409 73 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "GET /api/appointments/available HTTP/1.1" 400 41 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "DELETE /api/appointments/1 HTTP/1.1" 200 90 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "GET /api/appointments/available?date=2026-12-25 HTTP/1.1" 200 326 "-" "-"
+::ffff:127.0.0.1 - - [21/Mar/2026:04:32:08 +0000] "PATCH /api/appointments/1/status HTTP/1.1" 200 29 "-" "-"
+FAIL tests/routes.test.js
+  ΓùÅ Appointment ΓÇö PATCH /:id/confirm ΓÇ║ returns 400 when appointment is already confirmed
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 409
+
+    [0m [90m 101 |[39m     })[33m;[39m
+     [90m 102 |[39m     [36mconst[39m res [33m=[39m [36mawait[39m 
+request(app)[33m.[39mpatch([32m'/api/appointments/1/confirm'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 103 |[39m     
+expect(res[33m.[39mstatusCode)[33m.[39mtoBe([35m400[39m)[33m;[39m
+     [90m     |[39m                            [31m[1m^[22m[39m
+     [90m 104 |[39m   })[33m;[39m
+     [90m 105 |[39m
+     [90m 106 |[39m   it([32m'confirms pending appointment and creates job'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {[0m
+
+      at Object.toBe (tests/routes.test.js:103:28)
+
+  ΓùÅ Appointment ΓÇö DELETE /:id ΓÇ║ returns 400 when try to cancel a completed appointment
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 400
+    Received: 409
+
+    [0m [90m 137 |[39m     })[33m;[39m
+     [90m 138 |[39m     [36mconst[39m res [33m=[39m [36mawait[39m 
+request(app)[33m.[39m[36mdelete[39m([32m'/api/appointments/1'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 139 |[39m     
+expect(res[33m.[39mstatusCode)[33m.[39mtoBe([35m400[39m)[33m;[39m
+     [90m     |[39m                            [31m[1m^[22m[39m
+     [90m 140 |[39m   })[33m;[39m
+     [90m 141 |[39m
+     [90m 142 |[39m   it([32m'cancels a pending appointment successfully'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {[0m
+
+      at Object.toBe (tests/routes.test.js:139:28)
+
+-----------------------|---------|----------|---------|---------|-----------------------------------------------------------------
+File                   | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                               
+-----------------------|---------|----------|---------|---------|-----------------------------------------------------------------
+All files              |   53.39 |     42.1 |    42.3 |   53.33 |                                                                 
+ src                   |   85.71 |      100 |   33.33 |   85.71 |                                                                 
+  app.js               |   85.71 |      100 |   33.33 |   85.71 | 29,46,51-52                                                     
+ src/config            |       0 |      100 |     100 |       0 |                                                                 
+  database.js          |       0 |      100 |     100 |       0 | 1-13                                                            
+ src/middleware        |    25.8 |    11.11 |      50 |   24.13 |                                                                 
+  auth.js              |       0 |        0 |       0 |       0 | 1-41                                                            
+  validate.js          |     100 |      100 |     100 |     100 |                                                                 
+ src/models            |       0 |      100 |     100 |       0 |                                                                 
+  Appointment.js       |       0 |      100 |     100 |       0 | 1-37                                                            
+  index.js             |       0 |      100 |     100 |       0 | 1-4                                                             
+ src/routes            |   66.07 |       70 |   63.63 |   65.71 |                                                                 
+  appointments.js      |   66.07 |       70 |   63.63 |   65.71 | 14-50,56-62,101,114,120-127,138,159,175,180-181,195,213-216,223 
+ src/services          |       0 |      100 |       0 |       0 |                                                                 
+  cvClient.js          |       0 |      100 |       0 |       0 | 1-24                                                            
+  jobClient.js         |       0 |      100 |       0 |       0 | 1-10                                                            
+ src/utils             |     100 |      100 |     100 |     100 |                                                                 
+  validationSchemas.js |     100 |      100 |     100 |     100 |                                                                 
+-----------------------|---------|----------|---------|---------|-----------------------------------------------------------------
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       2 failed, 15 passed, 17 total
+Snapshots:   0 total
+Time:        4.613 s
+Ran all test suites.

@@ -9,6 +9,16 @@ const paymentClient = require('../services/paymentClient');
 
 const router = express.Router();
 
+// GET /api/jobs/mechanics/list — returns list of mechanics from CV Service for admin assignment
+router.get('/mechanics/list', authenticate, adminOnly, async (req, res) => {
+  try {
+    const mechanics = await cvClient.getMechanics();
+    res.json(mechanics);
+  } catch (err) {
+    res.status(502).json({ error: 'Could not fetch mechanics', details: err.message });
+  }
+});
+
 // POST /api/jobs — called by Appointment Service (no auth — internal call)
 router.post('/', validate(createJobSchema), async (req, res) => {
   try {
@@ -139,6 +149,10 @@ router.patch('/:id/start', authenticate, staffOnly, async (req, res) => {
       return res.status(409).json({
         error: `Cannot start job with status: ${job.status}`
       });
+    }
+
+    if (!job.assignedMechanic) {
+      return res.status(400).json({ error: 'Cannot start job without an assigned mechanic' });
     }
 
     await job.update({ status: 'in_progress' });
