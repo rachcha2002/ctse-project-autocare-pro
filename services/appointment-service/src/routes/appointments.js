@@ -30,12 +30,7 @@ router.post('/', authenticate, validate(createAppointmentSchema), async (req, re
       return res.status(404).json({ error: 'Vehicle not found in system' });
     }
 
-    if (vehicle.status === 'in_service') {
-      return res.status(409).json({
-        error: 'Vehicle is currently being serviced. Cannot book a new appointment.'
-      });
-    }
-
+    // Check if vehicle belongs to customer
     if (vehicle.customerId !== customerId) {
       return res.status(403).json({ error: 'Vehicle does not belong to this customer' });
     }
