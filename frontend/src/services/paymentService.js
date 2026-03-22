@@ -25,6 +25,11 @@ export const getReceipt = async (id) => {
   return data;
 };
 
+export const stripePayment = async (id, cardData) => {
+  const { data } = await api.post(`/api/payments/${id}/stripe-pay`, cardData);
+  return data;
+};
+
 export const cancelInvoice = async (id) => {
   const { data } = await api.patch(`/api/payments/${id}/cancel`);
   return data;

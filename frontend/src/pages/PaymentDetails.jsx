@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { getPayment, processPayment, getReceipt } from '../services/paymentService';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function PaymentDetails() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [payment, setPayment] = useState(null);
   const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,6 +15,9 @@ export default function PaymentDetails() {
   const [payMethod, setPayMethod] = useState('cash');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Show success banner if returning from stripe page
+  const justPaid = searchParams.get('paid') === '1';
 
   const load = async () => {
     try {
@@ -27,11 +32,23 @@ export default function PaymentDetails() {
 
   useEffect(() => { load(); }, [id]);
 
+  useEffect(() => {
+    if (justPaid) {
+      setSuccess('Payment successful! Your invoice has been paid.');
+    }
+  }, [justPaid]);
+
   const handlePay = async () => {
+    // Card: redirect to Stripe payment page
+    if (payMethod === 'card') {
+      navigate(`/payments/${id}/pay`);
+      return;
+    }
+    // Cash: process directly (admin use)
     setPaying(true);
     setError('');
     try {
-      await processPayment(id, payMethod);
+      await processPayment(id, 'cash');
       setSuccess('Payment processed successfully!');
       await load();
     } catch (err) {
@@ -98,12 +115,14 @@ export default function PaymentDetails() {
         )}
       </div>
 
+      {/* Alerts */}
+      {success && <div className="alert-success mb-4 flex items-center gap-2">✅ {success}</div>}
+      {error && <div className="alert-error mb-4">{error}</div>}
+
       {/* Pay Now */}
       {payment.status === 'pending' && (
         <div className="card p-6">
           <h2 className="font-semibold text-white mb-4">Process Payment</h2>
-          {error && <div className="alert-error mb-4">{error}</div>}
-          {success && <div className="alert-success mb-4">{success}</div>}
           <div className="flex gap-3 mb-4">
             {['cash', 'card'].map(m => (
               <button key={m} type="button"
@@ -114,8 +133,19 @@ export default function PaymentDetails() {
               </button>
             ))}
           </div>
+
+          {payMethod === 'card' && (
+            <div className="alert-info mb-4 text-xs flex items-center gap-2">
+              🔒 You'll be taken to our secure payment page to enter your card details.
+            </div>
+          )}
+
           <button onClick={handlePay} className="btn-primary w-full justify-center" disabled={paying}>
-            {paying ? 'Processing…' : `Pay LKR ${parseFloat(payment.totalAmount).toLocaleString()} via ${payMethod}`}
+            {paying
+              ? 'Processing…'
+              : payMethod === 'card'
+                ? `Pay with Card →`
+                : `Pay LKR ${parseFloat(payment.totalAmount).toLocaleString()} (Cash)`}
           </button>
         </div>
       )}

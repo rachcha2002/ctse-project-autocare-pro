@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const { Payment } = require('../models');
 const { authenticate, adminOnly } = require('../middleware/auth');
 const validate = require('../middleware/validate');
-const { createInvoiceSchema, processPaymentSchema } = require('../utils/validationSchemas');
+const { createInvoiceSchema, processPaymentSchema, stripePaySchema } = require('../utils/validationSchemas');
 const { generateInvoiceNumber } = require('../utils/invoiceGenerator');
 const jobClient = require('../services/jobClient');
 const cvClient = require('../services/cvClient');
@@ -165,6 +165,55 @@ router.post('/:id/pay', authenticate, validate(processPaymentSchema), async (req
   } catch (err) {
     console.error('Process payment error:', err);
     res.status(500).json({ error: 'Failed to process payment', details: err.message });
+  }
+});
+
+// POST /api/payments/:id/stripe-pay — dummy card payment (always succeeds for 4242 4242 4242 4242)
+router.post('/:id/stripe-pay', authenticate, validate(stripePaySchema), async (req, res) => {
+  try {
+    const payment = await Payment.findByPk(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+
+    if (payment.status === 'paid') {
+      return res.status(400).json({ error: 'This invoice has already been paid' });
+    }
+
+    if (payment.status === 'cancelled') {
+      return res.status(409).json({ error: 'Cannot process payment for cancelled invoice' });
+    }
+
+    // Dummy card validation — strip spaces, check magic test number
+    const rawCard = (req.body.cardNumber || '').replace(/\s/g, '');
+    const MAGIC_CARD = '4242424242424242';
+    if (rawCard !== MAGIC_CARD) {
+      return res.status(402).json({ error: 'Card declined. Please check your card details and try again.' });
+    }
+
+    // Update payment record
+    await payment.update({
+      status: 'paid',
+      paymentMethod: 'card',
+      paidAt: new Date()
+    });
+
+    // Update customer spending (best-effort)
+    try {
+      await cvClient.updateCustomerSpending(
+        payment.customerId,
+        parseFloat(payment.totalAmount)
+      );
+    } catch (err) {
+      console.error('Failed to update customer spending (stripe-pay):', err.message);
+    }
+
+    res.json({
+      success: true,
+      payment,
+      receiptUrl: `/api/payments/${payment.id}/receipt`
+    });
+  } catch (err) {
+    console.error('Stripe pay error:', err);
+    res.status(500).json({ error: 'Failed to process card payment', details: err.message });
   }
 });
 

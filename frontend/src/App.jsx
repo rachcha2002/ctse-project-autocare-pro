@@ -20,6 +20,7 @@ import Appointments from './pages/Appointments';
 import AppointmentDetails from './pages/AppointmentDetails';
 import Payments from './pages/Payments';
 import PaymentDetails from './pages/PaymentDetails';
+import StripePaymentPage from './pages/StripePaymentPage';
 
 // Admin pages
 import Admin from './pages/Admin';
@@ -63,6 +64,7 @@ function App() {
         <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
         <Route path="/appointments/:id" element={<ProtectedRoute><AppointmentDetails /></ProtectedRoute>} />
         <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+        <Route path="/payments/:id/pay" element={<ProtectedRoute><StripePaymentPage /></ProtectedRoute>} />
         <Route path="/payments/:id" element={<ProtectedRoute><PaymentDetails /></ProtectedRoute>} />
 
         {/* Admin Routes — requires auth + staff role */}
