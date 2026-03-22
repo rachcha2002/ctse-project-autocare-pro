@@ -109,6 +109,15 @@ Each service has a complete `openapi.yaml` at its root:
 - [`job-service/openapi.yaml`](services/job-service/openapi.yaml)
 - [`payment-service/openapi.yaml`](services/payment-service/openapi.yaml)
 
+### **Production API Documentation (Swagger UI)**
+
+Access the interactive documentation for the deployed services:
+
+- **Customer & Vehicle API**: [https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/customer/](https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/customer/)
+- **Appointment API**: [https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/appointment/](https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/appointment/)
+- **Job API**: [https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/job/](https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/job/)
+- **Payment API**: [https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/payment/](https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io/docs/payment/)
+
 ## CI/CD Pipeline (per service)
 
 Each `.github/workflows/*.yml` runs on push to `main` (path-filtered):
@@ -141,9 +150,9 @@ ctse-project-autocare-pro/
 |----------|-----|
 | GitHub Repo | [github.com/rachcha2002/ctse-project-autocare-pro](https://github.com/rachcha2002/ctse-project-autocare-pro) |
 | SonarCloud | TBD — populate after first push to main |
-| Docker Hub | TBD — populate after first CI run |
-| Live API Gateway | TBD — populate after deployment |
-| Live Frontend | TBD — populate after deployment |
+| Docker Hub | [hub.docker.com/u/rachcha](https://hub.docker.com/u/rachcha) |
+| Live API Gateway | [gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io](https://gateway.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io) |
+| Live Frontend | [frontend.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io](https://frontend.gentlemushroom-35c31fca.southeastasia.azurecontainerapps.io) |
 
 ## Report — Known Corrections
 
