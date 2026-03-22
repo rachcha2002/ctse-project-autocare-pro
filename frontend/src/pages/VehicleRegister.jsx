@@ -22,7 +22,16 @@ export default function VehicleRegister() {
     setLoading(true);
     setError('');
     try {
-      const vehicle = await registerVehicle({ ...form, year: parseInt(form.year), mileage: parseInt(form.mileage) || 0 });
+      const payload = {
+        customerId: form.customerId,
+        registrationNumber: form.registrationNumber,
+        brand: form.make,
+        model: form.model,
+        year: parseInt(form.year),
+        fuelType: form.fuelType,
+        currentMileage: parseInt(form.mileage) || 0
+      };
+      const vehicle = await registerVehicle(payload);
       navigate(`/vehicles/${vehicle.id}`);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to register vehicle.');

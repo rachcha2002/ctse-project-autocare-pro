@@ -41,8 +41,8 @@ export default function Vehicles() {
                 <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🚗</div>
                 <StatusBadge status={v.status || 'active'} />
               </div>
-              <h3 className="font-bold text-white text-lg">{v.make} {v.model}</h3>
-              <p className="text-gray-500 text-sm">{v.year} • {v.colour}</p>
+              <h3 className="font-bold text-white text-lg">{v.brand} {v.model}</h3>
+              <p className="text-gray-500 text-sm">{v.year} • {v.fuelType}</p>
               <div className="mt-3 pt-3 border-t border-[#2a2a32] flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-600">Registration</p>

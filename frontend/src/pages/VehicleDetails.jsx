@@ -21,8 +21,8 @@ export default function VehicleDetails() {
   if (!vehicle) return <div className="page-container"><p className="text-gray-500">Vehicle not found.</p></div>;
 
   const details = [
-    ['Make', vehicle.make], ['Model', vehicle.model], ['Year', vehicle.year],
-    ['Colour', vehicle.colour], ['Fuel Type', vehicle.fuelType], ['Mileage', `${vehicle.mileage?.toLocaleString() || 0} km`],
+    ['Make', vehicle.brand], ['Model', vehicle.model], ['Year', vehicle.year],
+    ['Fuel Type', vehicle.fuelType], ['Mileage', `${vehicle.currentMileage?.toLocaleString() || 0} km`],
   ];
 
   return (
@@ -30,7 +30,7 @@ export default function VehicleDetails() {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link to="/vehicles" className="hover:text-gray-300">My Vehicles</Link>
         <span>›</span>
-        <span className="text-gray-300">{vehicle.make} {vehicle.model}</span>
+        <span className="text-gray-300">{vehicle.brand} {vehicle.model}</span>
       </div>
 
       {/* Header */}
@@ -38,10 +38,10 @@ export default function VehicleDetails() {
         <div className="w-20 h-20 bg-orange-500/10 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0">🚗</div>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-white">{vehicle.make} {vehicle.model}</h1>
+            <h1 className="text-2xl font-bold text-white">{vehicle.brand} {vehicle.model}</h1>
             <StatusBadge status={vehicle.status || 'active'} />
           </div>
-          <p className="text-gray-500">{vehicle.year} • {vehicle.colour}</p>
+          <p className="text-gray-500">{vehicle.year} • {vehicle.fuelType}</p>
           <p className="text-orange-400 font-mono font-semibold text-lg mt-1">{vehicle.registrationNumber}</p>
         </div>
         <Link to="/appointments/new" className="btn-primary">Book Service</Link>
