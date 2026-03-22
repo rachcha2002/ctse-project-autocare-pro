@@ -24,6 +24,10 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Add env setup script
+COPY env.sh /docker-entrypoint.d/
+RUN chmod +x /docker-entrypoint.d/env.sh
+
 # Expose port
 EXPOSE 80
 
