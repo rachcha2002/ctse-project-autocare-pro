@@ -28,6 +28,7 @@ import AdminJobs from './pages/AdminJobs';
 import AdminJobDetails from './pages/AdminJobDetails';
 import AdminCustomers from './pages/AdminCustomers';
 import AdminPayments from './pages/AdminPayments';
+import AdminStaff from './pages/AdminStaff';
 
 const NotFound = () => (
   <div className="min-h-screen bg-[#0d0d0f] flex items-center justify-center">
@@ -71,6 +72,7 @@ function App() {
         <Route path="/admin/jobs/:id" element={<ProtectedRoute adminOnly><AdminJobDetails /></ProtectedRoute>} />
         <Route path="/admin/customers" element={<ProtectedRoute adminOnly><AdminCustomers /></ProtectedRoute>} />
         <Route path="/admin/payments" element={<ProtectedRoute adminOnly><AdminPayments /></ProtectedRoute>} />
+        <Route path="/admin/staff" element={<ProtectedRoute adminOnly><AdminStaff /></ProtectedRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />

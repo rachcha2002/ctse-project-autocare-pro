@@ -52,8 +52,24 @@ const serviceUpdateSchema = Joi.object({
   amountPaid: Joi.number().optional(),
 });
 
+const createStaffSchema = Joi.object({
+  fullName: Joi.string().required(),
+  phone: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+  role: Joi.string().valid('admin', 'mechanic').required(),
+});
+
+const updateStaffSchema = Joi.object({
+  fullName: Joi.string().optional(),
+  phone: Joi.string().optional(),
+  role: Joi.string().valid('admin', 'mechanic').optional(),
+  password: Joi.string().min(6).optional()
+});
+
 module.exports = {
   registerSchema, loginSchema, vehicleSchema,
   updateVehicleSchema, updateCustomerSchema,
-  updateSpendingSchema, serviceUpdateSchema
+  updateSpendingSchema, serviceUpdateSchema,
+  createStaffSchema, updateStaffSchema
 };
