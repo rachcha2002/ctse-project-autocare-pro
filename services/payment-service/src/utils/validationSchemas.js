@@ -12,4 +12,11 @@ const processPaymentSchema = Joi.object({
   paymentMethod: Joi.string().valid('cash', 'card').required(),
 });
 
-module.exports = { createInvoiceSchema, processPaymentSchema };
+const stripePaySchema = Joi.object({
+  cardNumber: Joi.string().required(),
+  expiry: Joi.string().required(),
+  cvv: Joi.string().required(),
+  cardHolder: Joi.string().required(),
+});
+
+module.exports = { createInvoiceSchema, processPaymentSchema, stripePaySchema };

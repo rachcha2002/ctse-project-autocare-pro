@@ -178,3 +178,54 @@ describe('Payment — GET / (admin)', () => {
     expect(Array.isArray(res.body)).toBe(true);
   });
 });
+
+// ---- Stripe-pay ----
+describe('Payment — POST /:id/stripe-pay', () => {
+  const validCardBody = {
+    cardNumber: '4242 4242 4242 4242',
+    expiry: '12/27',
+    cvv: '123',
+    cardHolder: 'Test User',
+  };
+
+  it('returns 200 when magic test card is used on a pending invoice', async () => {
+    const { Payment } = require('../src/models');
+    const cvClient = require('../src/services/cvClient');
+    Payment.findByPk.mockResolvedValue({
+      id: 1, status: 'pending', totalAmount: 3500, customerId: 1,
+      update: jest.fn().mockResolvedValue({
+        id: 1, status: 'paid', paymentMethod: 'card',
+        paidAt: new Date().toISOString(), totalAmount: 3500,
+      }),
+    });
+    cvClient.updateCustomerSpending.mockResolvedValue({});
+    const res = await request(app)
+      .post('/api/payments/1/stripe-pay')
+      .send(validCardBody);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  it('returns 402 when a non-magic card number is used (declined)', async () => {
+    const { Payment } = require('../src/models');
+    Payment.findByPk.mockResolvedValue({
+      id: 2, status: 'pending', totalAmount: 2000, customerId: 2,
+      update: jest.fn(),
+    });
+    const res = await request(app)
+      .post('/api/payments/2/stripe-pay')
+      .send({ ...validCardBody, cardNumber: '1234 5678 9012 3456' });
+    expect(res.statusCode).toBe(402);
+    expect(res.body.error).toMatch(/declined/i);
+  });
+
+  it('returns 400 when invoice is already paid', async () => {
+    const { Payment } = require('../src/models');
+    Payment.findByPk.mockResolvedValue({ id: 3, status: 'paid', totalAmount: 3500 });
+    const res = await request(app)
+      .post('/api/payments/3/stripe-pay')
+      .send(validCardBody);
+    expect(res.statusCode).toBe(400);
+  });
+});
+
