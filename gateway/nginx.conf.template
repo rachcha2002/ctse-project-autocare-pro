@@ -1,5 +1,8 @@
 server {
     listen 80;
+    
+    # Crucial for routing to Azure Container Apps (which rely on SNI)
+    proxy_ssl_server_name on;
 
     # Customer & Vehicle Service routes
     location /api/auth/ {
