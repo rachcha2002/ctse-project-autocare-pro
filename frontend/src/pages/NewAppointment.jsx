@@ -4,7 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { getMyVehicles } from '../services/vehicleService';
 import { bookAppointment, getAvailableSlots } from '../services/appointmentService';
 
-const SERVICE_TYPES = ['Oil Change', 'Brake Service', 'Tire Rotation', 'Engine Tune-Up', 'Battery Replacement', 'AC Service', 'Transmission Service', 'Full Inspection', 'Body Work', 'Other'];
+const SERVICE_TYPES = [
+  'Full Service', 'Oil Change', 'Brake Check', 'Tyre Rotation',
+  'Engine Diagnostic', 'Air Filter Replacement', 'Battery Check', 'General Repair'
+];
 
 export default function NewAppointment() {
   const { user } = useAuth();
@@ -40,7 +43,14 @@ export default function NewAppointment() {
     setSubmitting(true);
     setError('');
     try {
-      const apt = await bookAppointment({ ...form, customerId: user.id });
+      const payload = {
+        customerId: user.id,
+        vehicleId: parseInt(form.vehicleId),
+        serviceType: form.serviceType,
+        appointmentDate: form.appointmentDate,
+        notes: form.notes
+      };
+      const apt = await bookAppointment(payload);
       navigate(`/appointments/${apt.id}`);
     } catch (err) {
       setError(err.response?.data?.error || 'Booking failed.');
@@ -85,7 +95,7 @@ export default function NewAppointment() {
                       onClick={() => setForm({ ...form, vehicleId: String(v.id) })}
                       className={`p-4 rounded-xl border text-left transition-all ${form.vehicleId === String(v.id)
                         ? 'border-orange-500 bg-orange-500/10' : 'border-[#2a2a32] bg-[#141416] hover:border-[#3a3a42]'}`}>
-                      <p className="font-medium text-white">{v.make} {v.model} ({v.year})</p>
+                      <p className="font-medium text-white">{v.brand} {v.model} ({v.year})</p>
                       <p className="text-sm text-orange-400 font-mono">{v.registrationNumber}</p>
                     </button>
                   ))}
@@ -154,7 +164,7 @@ export default function NewAppointment() {
             {error && <div className="alert-error">{error}</div>}
             <div className="rounded-xl bg-[#141416] p-5 space-y-3">
               {[
-                ['Vehicle', vehicle ? `${vehicle.make} ${vehicle.model} (${vehicle.registrationNumber})` : '—'],
+                ['Vehicle', vehicle ? `${vehicle.brand} ${vehicle.model} (${vehicle.registrationNumber})` : '—'],
                 ['Service', form.serviceType],
                 ['Date & Time', form.appointmentDate ? new Date(form.appointmentDate).toLocaleString() : '—'],
                 ['Notes', form.notes || '—'],
