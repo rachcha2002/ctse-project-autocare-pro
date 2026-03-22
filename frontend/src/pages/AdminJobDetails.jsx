@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getJob, assignJob, startJob, updateJobProgress, completeJob, getMechanics } from '../services/jobService';
+import { useAuth } from '../context/AuthContext';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function AdminJobDetails() {
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
@@ -87,7 +89,7 @@ export default function AdminJobDetails() {
       {success && <div className="alert-success mb-4">{success}</div>}
 
       {/* Assign Mechanic */}
-      {!job.assignedMechanic && job.status !== 'completed' && (
+      {!job.assignedMechanic && job.status !== 'completed' && user?.role === 'admin' && (
         <div className="card p-6 mb-5">
           <h2 className="font-semibold text-white mb-4">Assign Mechanic</h2>
           <div className="flex gap-3">
@@ -111,7 +113,7 @@ export default function AdminJobDetails() {
             <p className="text-gray-400 text-sm">Assigned Mechanic</p>
             <p className="text-white font-medium">Mechanic #{job.assignedMechanic}</p>
           </div>
-          {job.status === 'pending' && (
+          {job.status === 'pending' && (user?.id === job.assignedMechanic || user?.role === 'admin') && (
             <button onClick={handleStart} disabled={actionLoading === 'Start'} className="btn-primary">
               {actionLoading === 'Start' ? '…' : '▶ Start Job'}
             </button>
@@ -120,7 +122,7 @@ export default function AdminJobDetails() {
       )}
 
       {/* Progress Update */}
-      {job.status !== 'completed' && job.status !== 'created' && (
+      {job.status !== 'completed' && job.status !== 'created' && (user?.id === job.assignedMechanic || user?.role === 'admin') && (
         <div className="card p-6 mb-5">
           <h2 className="font-semibold text-white mb-4">Work Progress</h2>
           <div className="space-y-4">

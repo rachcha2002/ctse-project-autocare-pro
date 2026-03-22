@@ -32,12 +32,12 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-1">
               {isAdmin ? (
                 <>
-                  <Link to="/admin" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin')}`}>Dashboard</Link>
-                  <Link to="/admin/appointments" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/appointments')}`}>Appointments</Link>
+                  {user?.role === 'admin' && <Link to="/admin" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin')}`}>Dashboard</Link>}
+                  {user?.role === 'admin' && <Link to="/admin/appointments" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/appointments')}`}>Appointments</Link>}
                   <Link to="/admin/jobs" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/jobs')}`}>Jobs</Link>
-                  <Link to="/admin/customers" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/customers')}`}>Customers</Link>
-                  <Link to="/admin/staff" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/staff')}`}>Staff</Link>
-                  <Link to="/admin/payments" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/payments')}`}>Payments</Link>
+                  {user?.role === 'admin' && <Link to="/admin/customers" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/customers')}`}>Customers</Link>}
+                  {user?.role === 'admin' && <Link to="/admin/staff" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/staff')}`}>Staff</Link>}
+                  {user?.role === 'admin' && <Link to="/admin/payments" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/admin/payments')}`}>Payments</Link>}
                 </>
               ) : (
                 <>

@@ -66,13 +66,13 @@ function App() {
         <Route path="/payments/:id" element={<ProtectedRoute><PaymentDetails /></ProtectedRoute>} />
 
         {/* Admin Routes — requires auth + staff role */}
-        <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-        <Route path="/admin/appointments" element={<ProtectedRoute adminOnly><AdminAppointments /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute superAdminOnly><Admin /></ProtectedRoute>} />
+        <Route path="/admin/appointments" element={<ProtectedRoute superAdminOnly><AdminAppointments /></ProtectedRoute>} />
         <Route path="/admin/jobs" element={<ProtectedRoute adminOnly><AdminJobs /></ProtectedRoute>} />
         <Route path="/admin/jobs/:id" element={<ProtectedRoute adminOnly><AdminJobDetails /></ProtectedRoute>} />
-        <Route path="/admin/customers" element={<ProtectedRoute adminOnly><AdminCustomers /></ProtectedRoute>} />
-        <Route path="/admin/payments" element={<ProtectedRoute adminOnly><AdminPayments /></ProtectedRoute>} />
-        <Route path="/admin/staff" element={<ProtectedRoute adminOnly><AdminStaff /></ProtectedRoute>} />
+        <Route path="/admin/customers" element={<ProtectedRoute superAdminOnly><AdminCustomers /></ProtectedRoute>} />
+        <Route path="/admin/payments" element={<ProtectedRoute superAdminOnly><AdminPayments /></ProtectedRoute>} />
+        <Route path="/admin/staff" element={<ProtectedRoute superAdminOnly><AdminStaff /></ProtectedRoute>} />
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
