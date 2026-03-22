@@ -10,8 +10,10 @@ import Register from './pages/Register';
 
 // Customer pages
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 import Vehicles from './pages/Vehicles';
 import VehicleRegister from './pages/VehicleRegister';
+import VehicleEdit from './pages/VehicleEdit';
 import VehicleDetails from './pages/VehicleDetails';
 import NewAppointment from './pages/NewAppointment';
 import Appointments from './pages/Appointments';
@@ -51,8 +53,10 @@ function App() {
 
         {/* Customer Routes — requires auth */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
         <Route path="/vehicles/register" element={<ProtectedRoute><VehicleRegister /></ProtectedRoute>} />
+        <Route path="/vehicles/:id/edit" element={<ProtectedRoute><VehicleEdit /></ProtectedRoute>} />
         <Route path="/vehicles/:id" element={<ProtectedRoute><VehicleDetails /></ProtectedRoute>} />
         <Route path="/appointments/new" element={<ProtectedRoute><NewAppointment /></ProtectedRoute>} />
         <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />

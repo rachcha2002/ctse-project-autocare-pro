@@ -41,6 +41,7 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link to="/dashboard" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/dashboard')}`}>Dashboard</Link>
+                  <Link to="/profile" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/profile')}`}>My Profile</Link>
                   <Link to="/vehicles" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/vehicles')}`}>My Vehicles</Link>
                   <Link to="/appointments" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/appointments')}`}>Appointments</Link>
                   <Link to="/payments" className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isActive('/payments')}`}>Payments</Link>

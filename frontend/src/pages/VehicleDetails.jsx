@@ -44,7 +44,10 @@ export default function VehicleDetails() {
           <p className="text-gray-500">{vehicle.year} • {vehicle.fuelType}</p>
           <p className="text-orange-400 font-mono font-semibold text-lg mt-1">{vehicle.registrationNumber}</p>
         </div>
-        <Link to="/appointments/new" className="btn-primary">Book Service</Link>
+        <div className="flex flex-col gap-2 shrink-0">
+          <Link to={`/vehicles/${id}/edit`} className="btn-secondary !py-2 text-center">Edit Details</Link>
+          <Link to="/appointments/new" className="btn-primary !py-2 text-center">Book Service</Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
