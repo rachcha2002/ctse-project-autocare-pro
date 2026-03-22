@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { loginStaff } from '../services/authService';
+import logo from '../assets/logo.png';
 
 export default function StaffLogin() {
   const [email, setEmail] = useState('');
@@ -32,11 +33,9 @@ export default function StaffLogin() {
       <div className="w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black">AC</span>
-            </div>
-            <span className="font-bold text-white text-xl">AutoCare <span className="text-orange-400">Pro</span></span>
+          <Link to="/" className="inline-flex items-center gap-3 mb-6">
+            <img src={logo} alt="AutoCare Pro Logo" className="w-12 h-12 object-contain drop-shadow-md" />
+            <span className="font-bold text-white text-2xl">AutoCare <span className="text-orange-400">Pro</span></span>
           </Link>
           <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-3 py-1 mb-4">
             <span className="text-orange-400 text-xs font-semibold uppercase tracking-wider">Staff Portal</span>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { registerCustomer } from '../services/authService';
+import logo from '../assets/logo.png';
 
 export default function Register() {
   const [form, setForm] = useState({ fullName: '', phone: '', email: '', password: '', address: '', nic: '' });
@@ -40,11 +41,9 @@ export default function Register() {
     <div className="min-h-screen bg-[#0d0d0f] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <span className="text-white font-black">AC</span>
-            </div>
-            <span className="font-bold text-white text-xl">AutoCare <span className="text-orange-400">Pro</span></span>
+          <Link to="/" className="inline-flex items-center gap-3 mb-6">
+            <img src={logo} alt="AutoCare Pro Logo" className="w-12 h-12 object-contain drop-shadow-md" />
+            <span className="font-bold text-white text-2xl">AutoCare <span className="text-orange-400">Pro</span></span>
           </Link>
           <h1 className="text-2xl font-bold text-white">Create your account</h1>
           <p className="text-gray-500 mt-1 text-sm">Free forever. No credit card required.</p>
