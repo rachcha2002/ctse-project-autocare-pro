@@ -135,7 +135,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PATCH /api/appointments/:id/confirm — Admin only
-// Confirms appointment, sets vehicle to in_service, creates job
+
 router.patch('/:id/confirm', authenticate, adminOnly, async (req, res) => {
   try {
     const appointment = await Appointment.findByPk(req.params.id);
